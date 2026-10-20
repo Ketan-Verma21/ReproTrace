@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_bac5609cc064",
+  "label": "fixture",
+  "group_id": "grp_f58e7e0435e4",
+  "command": [
+    "python3",
+    "-c",
+    "open('/nonexistent/' + 'x' * 300)"
+  ],
+  "exit_code": 1,
+  "timed_out": false,
+  "duration_ms": 31,
+  "started_at": "2026-10-20T13:55:50.768874Z",
+  "git_commit": null,
+  "trace_path": "runs/run_bac5609cc064/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

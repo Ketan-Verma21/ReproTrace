@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_00e892067856",
+  "label": "fixture",
+  "group_id": "grp_11a781832720",
+  "command": [
+    "python3",
+    "-c",
+    "import socket; s = socket.socket(); s.settimeout(1); print(s.connect_ex(('127.0.0.1', 9)))"
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "duration_ms": 64,
+  "started_at": "2026-10-20T13:55:50.495868Z",
+  "git_commit": null,
+  "trace_path": "runs/run_00e892067856/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

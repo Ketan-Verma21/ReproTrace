@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_4ce0225ba264",
+  "label": "fixture",
+  "group_id": "grp_73913876d215",
+  "command": [
+    "python3",
+    "-c",
+    "import os, tempfile; open(f'/proc/{os.getpid()}/status').read(); d = tempfile.mkdtemp(); open(os.path.join(d, 'f.txt'), 'w').close(); open('/nonexistent/config.toml')"
+  ],
+  "exit_code": 1,
+  "timed_out": false,
+  "duration_ms": 63,
+  "started_at": "2026-10-20T16:35:11.119762Z",
+  "git_commit": null,
+  "trace_path": "runs/run_4ce0225ba264/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

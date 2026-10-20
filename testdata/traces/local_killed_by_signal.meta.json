@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_48f206ec056b",
+  "label": "fixture",
+  "group_id": "grp_d9a922fc2603",
+  "command": [
+    "sh",
+    "-c",
+    "kill -TERM $$"
+  ],
+  "exit_code": -15,
+  "timed_out": false,
+  "duration_ms": 7,
+  "started_at": "2026-10-20T13:55:50.962378Z",
+  "git_commit": null,
+  "trace_path": "runs/run_48f206ec056b/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

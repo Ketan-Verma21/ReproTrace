@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_a70283c1ea1c",
+  "label": "fixture",
+  "group_id": "grp_24a95b54741f",
+  "command": [
+    "sh",
+    "-c",
+    "ls /etc/hostname /nonexistent; cat /etc/hostname & wait"
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "duration_ms": 15,
+  "started_at": "2026-10-20T16:35:11.529915Z",
+  "git_commit": null,
+  "trace_path": "runs/run_a70283c1ea1c/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

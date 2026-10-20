@@ -1,0 +1,79 @@
+# ReproTrace local data: captured runs, parsed events, reports, SQLite database.
+# Raw traces contain the full environment of the traced command (strace -v), so they must
+# never be committed. Real test fixtures live in testdata/traces/ and ARE committed.
+.reprotrace/
+
+# Planning and progress documents (kept local by choice)
+/Design.md
+/Architecture.md
+/Memory.md
+/Phases.md
+/PRD.md
+/Progress.md
+/Rules.md
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+.netrc
+.pypirc
+
+# Python bytecode and builds
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test, lint and type-check caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Temporary files (events.jsonl is written via a .tmp file first)
+*.tmp
+*.swp
+*.swo
+*~
+
+# Ad-hoc trace and log files outside testdata/
+*.log
+/*.trace
+/*.strace
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "run_dd888c2be4fb",
+  "label": "fixture",
+  "group_id": "grp_bfc0d0cf88e1",
+  "command": [
+    "python3",
+    "-c",
+    "open('/nonexistent/config.toml')"
+  ],
+  "exit_code": 1,
+  "timed_out": false,
+  "duration_ms": 164,
+  "started_at": "2026-10-20T13:55:49.917967Z",
+  "git_commit": null,
+  "trace_path": "runs/run_dd888c2be4fb/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}

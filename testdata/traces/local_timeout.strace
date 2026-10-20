@@ -1,0 +1,116 @@
+27025 1792504551.173333 execve("/usr/bin/sleep", ["sleep", "5"], ["PATH=/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin", "HOME=/home/ketan", "LANG=C.UTF-8"]) = 0
+27025 1792504551.173696 brk(NULL)       = 0x5cac47300000
+27025 1792504551.173732 arch_prctl(0x3001 /* ARCH_??? */, 0x7ffe447c3450) = -1 EINVAL (Invalid argument)
+27025 1792504551.173790 mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x73ae2d655000
+27025 1792504551.173821 access("/etc/ld.so.preload", R_OK) = -1 ENOENT (No such file or directory)
+27025 1792504551.173849 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3</etc/ld.so.cache>
+27025 1792504551.173936 newfstatat(3</etc/ld.so.cache>, "", {st_dev=makedev(0x8, 0x3), st_ino=4457275, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=128, st_size=63712, st_atime=1792495542 /* 2026-10-20T16:55:42.345017443+0530 */, st_atime_nsec=345017443, st_mtime=1792495541 /* 2026-10-20T16:55:41.919017259+0530 */, st_mtime_nsec=919017259, st_ctime=1792495541 /* 2026-10-20T16:55:41.977017285+0530 */, st_ctime_nsec=977017285}, AT_EMPTY_PATH) = 0
+27025 1792504551.173984 mmap(NULL, 63712, PROT_READ, MAP_PRIVATE, 3</etc/ld.so.cache>, 0) = 0x73ae2d645000
+27025 1792504551.174007 close(3</etc/ld.so.cache>) = 0
+27025 1792504551.174031 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3</usr/lib/x86_64-linux-gnu/libc.so.6>
+27025 1792504551.174057 read(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0P\237\2\0\0\0\0\0@\0\0\0\0\0\0\0\360\320!\0\0\0\0\0\0\0\0\0@\08\0\16\0@\0B\0A\0\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\20\3\0\0\0\0\0\0\20\3\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0\34\0\0\0\0\0\0\0\34\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+27025 1792504551.174083 pread64(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\20\3\0\0\0\0\0\0\20\3\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0\34\0\0\0\0\0\0\0\34\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\340\177\2\0\0\0\0\0\340\177\2\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0\200\2\0\0\0\0\0\0\200\2\0\0\0\0\0\0\200\2\0\0\0\0\0"..., 784, 64) = 784
+27025 1792504551.174107 pread64(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\4\0\0\0 \0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0\2\200\0\300\4\0\0\0\1\0\0\0\0\0\0\0", 48, 848) = 48
+27025 1792504551.174130 pread64(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\4\0\0\0\24\0\0\0\3\0\0\0GNU\0jl\265\250\17\325\345\273[\363\256\252\21\32\335\230\350\210C\245\4\0\0\0\20\0\0\0\1\0\0\0GNU\0\0\0\0\0\3\0\0\0\2\0\0\0\0\0\0\0", 68, 896) = 68
+27025 1792504551.174151 newfstatat(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "", {st_dev=makedev(0x8, 0x3), st_ino=2100089, st_mode=S_IFREG|0755, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=4344, st_size=2220400, st_atime=1792487330 /* 2026-10-20T14:38:50.333417380+0530 */, st_atime_nsec=333417380, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487330 /* 2026-10-20T14:38:50.141398468+0530 */, st_ctime_nsec=141398468}, AT_EMPTY_PATH) = 0
+27025 1792504551.174184 pread64(3</usr/lib/x86_64-linux-gnu/libc.so.6>, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0\20\3\0\0\0\0\0\0\20\3\0\0\0\0\0\0\10\0\0\0\0\0\0\0\3\0\0\0\4\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0p>\36\0\0\0\0\0\34\0\0\0\0\0\0\0\34\0\0\0\0\0\0\0\20\0\0\0\0\0\0\0\1\0\0\0\4\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\340\177\2\0\0\0\0\0\340\177\2\0\0\0\0\0\0\20\0\0\0\0\0\0\1\0\0\0\5\0\0\0\0\200\2\0\0\0\0\0\0\200\2\0\0\0\0\0\0\200\2\0\0\0\0\0"..., 784, 64) = 784
+27025 1792504551.174207 mmap(NULL, 2264656, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3</usr/lib/x86_64-linux-gnu/libc.so.6>, 0) = 0x73ae2d400000
+27025 1792504551.174231 mprotect(0x73ae2d428000, 2023424, PROT_NONE) = 0
+27025 1792504551.174260 mmap(0x73ae2d428000, 1658880, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3</usr/lib/x86_64-linux-gnu/libc.so.6>, 0x28000) = 0x73ae2d428000
+27025 1792504551.174287 mmap(0x73ae2d5bd000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3</usr/lib/x86_64-linux-gnu/libc.so.6>, 0x1bd000) = 0x73ae2d5bd000
+27025 1792504551.174315 mmap(0x73ae2d616000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3</usr/lib/x86_64-linux-gnu/libc.so.6>, 0x215000) = 0x73ae2d616000
+27025 1792504551.174343 mmap(0x73ae2d61c000, 52816, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x73ae2d61c000
+27025 1792504551.174376 close(3</usr/lib/x86_64-linux-gnu/libc.so.6>) = 0
+27025 1792504551.174404 mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x73ae2d642000
+27025 1792504551.174428 arch_prctl(ARCH_SET_FS, 0x73ae2d642740) = 0
+27025 1792504551.174446 set_tid_address(0x73ae2d642a10) = 27025
+27025 1792504551.174464 set_robust_list(0x73ae2d642a20, 24) = 0
+27025 1792504551.174482 rseq(0x73ae2d6430e0, 0x20, 0, 0x53053053) = 0
+27025 1792504551.174534 mprotect(0x73ae2d616000, 16384, PROT_READ) = 0
+27025 1792504551.174567 mprotect(0x5cac16117000, 4096, PROT_READ) = 0
+27025 1792504551.174597 mprotect(0x73ae2d68f000, 8192, PROT_READ) = 0
+27025 1792504551.174625 prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+27025 1792504551.174657 munmap(0x73ae2d645000, 63712) = 0
+27025 1792504551.174704 getrandom("\x7e\x0c\x97\x42\xd9\x70\x8b\x87", 8, GRND_NONBLOCK) = 8
+27025 1792504551.174726 brk(NULL)       = 0x5cac47300000
+27025 1792504551.174742 brk(0x5cac47321000) = 0x5cac47321000
+27025 1792504551.174767 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/locale-archive", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/locale-archive>
+27025 1792504551.174797 newfstatat(3</usr/lib/locale/locale-archive>, "", {st_dev=makedev(0x8, 0x3), st_ino=2097744, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=11080, st_size=5712208, st_atime=1792487376 /* 2026-10-20T14:39:36.809999048+0530 */, st_atime_nsec=809999048, st_mtime=1792487374 /* 2026-10-20T14:39:34.861806824+0530 */, st_mtime_nsec=861806824, st_ctime=1792487374 /* 2026-10-20T14:39:34.861806824+0530 */, st_ctime_nsec=861806824}, AT_EMPTY_PATH) = 0
+27025 1792504551.174830 mmap(NULL, 5712208, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/locale-archive>, 0) = 0x73ae2ce00000
+27025 1792504551.174856 close(3</usr/lib/locale/locale-archive>) = 0
+27025 1792504551.174883 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/share/locale/locale.alias", O_RDONLY|O_CLOEXEC) = 3</etc/locale.alias>
+27025 1792504551.174910 newfstatat(3</etc/locale.alias>, "", {st_dev=makedev(0x8, 0x3), st_ino=4458132, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=2996, st_atime=1792487354 /* 2026-10-20T14:39:14.235772579+0530 */, st_atime_nsec=235772579, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487351 /* 2026-10-20T14:39:11.987550946+0530 */, st_ctime_nsec=987550946}, AT_EMPTY_PATH) = 0
+27025 1792504551.174943 read(3</etc/locale.alias>, "# Locale name alias data base.\n# Copyright (C) 1996-2022 Free Software Foundation, Inc.\n#\n# This program is free software; you can redistribute it and/or modify\n# it under the terms of the GNU General"..., 4096) = 2996
+27025 1792504551.174975 read(3</etc/locale.alias>, "", 4096) = 0
+27025 1792504551.174995 close(3</etc/locale.alias>) = 0
+27025 1792504551.175024 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_IDENTIFICATION", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175048 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_IDENTIFICATION", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_IDENTIFICATION>
+27025 1792504551.175072 newfstatat(3</usr/lib/locale/C.utf8/LC_IDENTIFICATION>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099372, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=258, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175108 mmap(NULL, 258, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_IDENTIFICATION>, 0) = 0x73ae2d68e000
+27025 1792504551.175130 close(3</usr/lib/locale/C.utf8/LC_IDENTIFICATION>) = 0
+27025 1792504551.175150 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache", O_RDONLY) = 3</usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache>
+27025 1792504551.175176 newfstatat(3</usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache>, "", {st_dev=makedev(0x8, 0x3), st_ino=2626106, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=56, st_size=27002, st_atime=1792487332 /* 2026-10-20T14:38:52.385619488+0530 */, st_atime_nsec=385619488, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487330 /* 2026-10-20T14:38:50.209405165+0530 */, st_ctime_nsec=209405165}, AT_EMPTY_PATH) = 0
+27025 1792504551.175209 mmap(NULL, 27002, PROT_READ, MAP_SHARED, 3</usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache>, 0) = 0x73ae2d64e000
+27025 1792504551.175233 close(3</usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache>) = 0
+27025 1792504551.175255 futex(0x73ae2d61ba6c, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+27025 1792504551.175277 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_MEASUREMENT", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175300 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_MEASUREMENT", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_MEASUREMENT>
+27025 1792504551.175325 newfstatat(3</usr/lib/locale/C.utf8/LC_MEASUREMENT>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099374, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=23, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175357 mmap(NULL, 23, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_MEASUREMENT>, 0) = 0x73ae2d64d000
+27025 1792504551.175379 close(3</usr/lib/locale/C.utf8/LC_MEASUREMENT>) = 0
+27025 1792504551.175401 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_TELEPHONE", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175424 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_TELEPHONE", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_TELEPHONE>
+27025 1792504551.175448 newfstatat(3</usr/lib/locale/C.utf8/LC_TELEPHONE>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099388, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=47, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175479 mmap(NULL, 47, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_TELEPHONE>, 0) = 0x73ae2d64c000
+27025 1792504551.175503 close(3</usr/lib/locale/C.utf8/LC_TELEPHONE>) = 0
+27025 1792504551.175526 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_ADDRESS", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175548 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_ADDRESS", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_ADDRESS>
+27025 1792504551.175572 newfstatat(3</usr/lib/locale/C.utf8/LC_ADDRESS>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099366, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=127, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175605 mmap(NULL, 127, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_ADDRESS>, 0) = 0x73ae2d64b000
+27025 1792504551.175627 close(3</usr/lib/locale/C.utf8/LC_ADDRESS>) = 0
+27025 1792504551.175651 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_NAME", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175675 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_NAME", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_NAME>
+27025 1792504551.175700 newfstatat(3</usr/lib/locale/C.utf8/LC_NAME>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099382, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=62, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175731 mmap(NULL, 62, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_NAME>, 0) = 0x73ae2d64a000
+27025 1792504551.175753 close(3</usr/lib/locale/C.utf8/LC_NAME>) = 0
+27025 1792504551.175774 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_PAPER", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175796 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_PAPER", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_PAPER>
+27025 1792504551.175821 newfstatat(3</usr/lib/locale/C.utf8/LC_PAPER>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099386, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=34, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175853 mmap(NULL, 34, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_PAPER>, 0) = 0x73ae2d649000
+27025 1792504551.175874 close(3</usr/lib/locale/C.utf8/LC_PAPER>) = 0
+27025 1792504551.175899 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_MESSAGES", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.175921 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_MESSAGES", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_MESSAGES>
+27025 1792504551.175945 newfstatat(3</usr/lib/locale/C.utf8/LC_MESSAGES>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099376, st_mode=S_IFDIR|0755, st_nlink=2, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=4096, st_atime=1792495399 /* 2026-10-20T16:53:19.079875821+0530 */, st_atime_nsec=79875821, st_mtime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_mtime_nsec=853862598, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.175977 close(3</usr/lib/locale/C.utf8/LC_MESSAGES>) = 0
+27025 1792504551.175996 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES>
+27025 1792504551.176020 newfstatat(3</usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099378, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=48, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176051 mmap(NULL, 48, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES>, 0) = 0x73ae2d648000
+27025 1792504551.176072 close(3</usr/lib/locale/C.utf8/LC_MESSAGES/SYS_LC_MESSAGES>) = 0
+27025 1792504551.176097 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_MONETARY", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.176120 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_MONETARY", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_MONETARY>
+27025 1792504551.176144 newfstatat(3</usr/lib/locale/C.utf8/LC_MONETARY>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099380, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=270, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176175 mmap(NULL, 270, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_MONETARY>, 0) = 0x73ae2d647000
+27025 1792504551.176196 close(3</usr/lib/locale/C.utf8/LC_MONETARY>) = 0
+27025 1792504551.176218 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_COLLATE", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.176240 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_COLLATE", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_COLLATE>
+27025 1792504551.176264 newfstatat(3</usr/lib/locale/C.utf8/LC_COLLATE>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099368, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=1406, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176295 mmap(NULL, 1406, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_COLLATE>, 0) = 0x73ae2d646000
+27025 1792504551.176318 close(3</usr/lib/locale/C.utf8/LC_COLLATE>) = 0
+27025 1792504551.176342 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_TIME", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.176364 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_TIME", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_TIME>
+27025 1792504551.176389 newfstatat(3</usr/lib/locale/C.utf8/LC_TIME>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099390, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=3360, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176421 mmap(NULL, 3360, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_TIME>, 0) = 0x73ae2d645000
+27025 1792504551.176442 close(3</usr/lib/locale/C.utf8/LC_TIME>) = 0
+27025 1792504551.176463 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_NUMERIC", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.176485 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_NUMERIC", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_NUMERIC>
+27025 1792504551.176510 newfstatat(3</usr/lib/locale/C.utf8/LC_NUMERIC>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099384, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=8, st_size=50, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176541 mmap(NULL, 50, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_NUMERIC>, 0) = 0x73ae2d641000
+27025 1792504551.176562 close(3</usr/lib/locale/C.utf8/LC_NUMERIC>) = 0
+27025 1792504551.176583 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.UTF-8/LC_CTYPE", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+27025 1792504551.176606 openat(AT_FDCWD</tmp/tmp.KeeqjhSMmD>, "/usr/lib/locale/C.utf8/LC_CTYPE", O_RDONLY|O_CLOEXEC) = 3</usr/lib/locale/C.utf8/LC_CTYPE>
+27025 1792504551.176631 newfstatat(3</usr/lib/locale/C.utf8/LC_CTYPE>, "", {st_dev=makedev(0x8, 0x3), st_ino=2099370, st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096, st_blocks=696, st_size=353616, st_atime=1792487643 /* 2026-10-20T14:44:03.913301041+0530 */, st_atime_nsec=913301041, st_mtime=1788445204 /* 2026-09-03T19:50:04+0530 */, st_mtime_nsec=0, st_ctime=1792487334 /* 2026-10-20T14:38:54.853862598+0530 */, st_ctime_nsec=853862598}, AT_EMPTY_PATH) = 0
+27025 1792504551.176666 mmap(NULL, 353616, PROT_READ, MAP_PRIVATE, 3</usr/lib/locale/C.utf8/LC_CTYPE>, 0) = 0x73ae2d3a9000
+27025 1792504551.176688 close(3</usr/lib/locale/C.utf8/LC_CTYPE>) = 0
+27025 1792504551.176722 clock_nanosleep(CLOCK_REALTIME, 0, {tv_sec=5, tv_nsec=0}, {tv_sec=4, tv_nsec=5166255}) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
+27025 1792504552.171951 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=27019, si_uid=1000} ---
+27025 1792504552.172592 +++ killed by SIGTERM +++
