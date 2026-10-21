@@ -1,0 +1,4 @@
+{
+  "description": "Required variable API_BASE_URL missing on bad",
+  "cause": {"kinds": ["env_diff"], "contains": ["API_BASE_URL"]}
+}

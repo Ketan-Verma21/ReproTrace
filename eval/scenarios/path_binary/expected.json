@@ -1,0 +1,4 @@
+{
+  "description": "Helper program greet present on PATH on good, missing on bad",
+  "cause": {"kinds": ["result_mismatch", "process_only_in_a", "exec_only_in_a", "exec_only_in_b", "executable_mismatch"], "contains": ["greet"]}
+}

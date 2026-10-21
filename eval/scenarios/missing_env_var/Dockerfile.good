@@ -1,0 +1,6 @@
+FROM reprotrace-eval-base
+COPY app.py /app/app.py
+COPY run.sh /scenario/run.sh
+# COPY keeps the host file mode; the scenario runs as a non-root user.
+RUN chmod 644 /app/app.py /scenario/run.sh
+ENV API_BASE_URL=https://api.example.com

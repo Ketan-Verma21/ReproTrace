@@ -1,0 +1,4 @@
+{
+  "description": "CA bundle deleted from the image; OpenSSL loads no trusted certificates",
+  "cause": {"kinds": ["result_mismatch", "file_only_in_a", "file_only_in_b"], "contains": ["cert.pem", "ca-certificates.crt"]}
+}

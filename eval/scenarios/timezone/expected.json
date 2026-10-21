@@ -1,0 +1,4 @@
+{
+  "description": "TZ set to UTC+05:30 on good, unset (UTC) on bad",
+  "cause": {"kinds": ["env_diff"], "contains": ["TZ"]}
+}

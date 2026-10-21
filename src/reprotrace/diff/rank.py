@@ -12,7 +12,9 @@ Signals:
 - stability: confirmed by repeated runs on both sides (noise already filtered).
 - proximity_to_failing_exit: how close the evidence is to the failing side's exit.
 - not_failure_consequence: 0 for divergences that follow from another one: the exit-status
-  difference itself (the symptom being explained); events seen on one side only after that
+  difference itself (the symptom being explained); one-sided paths that contain the value
+  of a differing environment variable (zoneinfo/<TZ>, locale/<LANG>); events seen on one
+  side only after that
   side's process stopped matching the other (error handling such as a traceback, or the
   normal work the passing side went on to do); and one-sided events inside the install
   folder of a program that differs between the sides (a different Python lays out its
@@ -76,7 +78,7 @@ def _category(
     if _is_session_var(key, config):
         return (
             config.env_platform_value,
-            f"{key} is a terminal or desktop session variable "
+            f"{key} is specific to the machine or terminal session "
             f"(weight {config.env_platform_value:.1f})",
         )
     side = cmp.failing_side
@@ -98,8 +100,41 @@ def _category(
     return default
 
 
+def _env_failure(ev: Evidence, cmp: Comparison, config: RankConfig) -> tuple[float, str | None]:
+    """A variable missing on the failing side, or set differently, is like a failed call."""
+    key, side = ev.env_key, cmp.failing_side
+    if key is None or side is None or _is_platform_var(key, config) or _is_session_var(key, config):
+        return 0.0, None
+    own = ev.env_values[0] if side == "a" else ev.env_values[1]
+    other = ev.env_values[1] if side == "a" else ev.env_values[0]
+    # Path-valued variables (PATH, PYTHONPATH, JAVA_HOME, ...) differ between almost any two
+    # machines; their effect shows up as file events instead, which are ranked on their own.
+    if any(v and "/" in v for v in (own, other)):
+        return 0.0, None
+    if own is None and other is not None:
+        return config.one_sided_failure_value, f"{key} is missing where the command failed"
+    if own is not None and other is not None:
+        return (
+            config.one_sided_failure_value,
+            f"{key} has a different value where the command failed",
+        )
+    return 0.0, None
+
+
+def _env_values_in_play(cmp: Comparison) -> list[tuple[str, str]]:
+    """(variable, value) for differing variables, for spotting paths built from them."""
+    pairs = []
+    for d in cmp.divergences:
+        ev = cmp.evidence[d.id]
+        if d.kind == "env_diff" and ev.env_key and ev.env_key != "PATH":
+            pairs += [(ev.env_key, v) for v in ev.env_values if v and len(v) >= 4 and "/" not in v]
+    return pairs
+
+
 def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankConfig
                      ) -> tuple[float, str | None]:  # fmt: skip
+    if d.kind == "env_diff":
+        return _env_failure(ev, cmp, config)
     benign = set(config.benign_errnos)
     a_err = next((e.errno for e in ev.a_events if e.errno and e.errno not in benign), None)
     b_err = next((e.errno for e in ev.b_events if e.errno and e.errno not in benign), None)
@@ -171,13 +206,22 @@ def _program_roots(cmp: Comparison) -> dict[tuple[int, str], str]:
 
 
 def _consequence(
-    d: Divergence, ev: Evidence, cmp: Comparison, roots: dict[tuple[int, str], str]
+    d: Divergence,
+    ev: Evidence,
+    cmp: Comparison,
+    roots: dict[tuple[int, str], str],
+    env_values: list[tuple[str, str]],
 ) -> str | None:
     """Why ``d`` looks like a consequence of another divergence rather than a cause, or None."""
     if bool(ev.a_events) != bool(ev.b_events) and 0 <= ev.pair_index < len(cmp.process_pairs):
         side = "a" if ev.a_events else "b"
         root = roots.get((ev.pair_index, side))
         target = (ev.a_events or ev.b_events)[0].target or ""
+        for key, value in env_values:
+            if value in target:
+                return (
+                    f"the path contains {value}, the value of {key}: follows from that difference"
+                )
         if root and (target == root or target.startswith(root + "/")):
             return (
                 f"inside {root}, the install folder of the different program on "
@@ -255,10 +299,11 @@ def rank_divergences(cmp: Comparison, config: RankConfig | None = None) -> list[
     }
     earliest = _earliest(cmp.divergences, cmp, weak_env)
     roots = _program_roots(cmp)
+    env_values = _env_values_in_play(cmp)
     ranked: list[Divergence] = []
     for d in cmp.divergences:
         ev = cmp.evidence[d.id]
-        consequence = _consequence(d, ev, cmp, roots)
+        consequence = _consequence(d, ev, cmp, roots, env_values)
         category, category_reason = categories[d.id]
         signals: dict[SignalName, tuple[float, str | None]] = {
             "failed_one_side": _failed_one_side(d, ev, cmp, config),

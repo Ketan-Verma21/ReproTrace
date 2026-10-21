@@ -249,7 +249,7 @@ class RankConfig(BaseModel):
         "COLORTERM", "DESKTOP_SESSION", "DISPLAY", "GDMSESSION", "LESS", "LSCOLORS",
         "LS_COLORS", "PAGER", "PS1", "SESSION_MANAGER", "TERM", "XAUTHORITY", "XMODIFIERS",
         "ZSH", "EDITOR", "VISUAL", "HISTFILE", "HISTSIZE", "MAIL", "MOTD_SHOWN",
-        "USERNAME", "WINDOWID", "SHELL",
+        "USERNAME", "WINDOWID", "SHELL", "HOSTNAME", "HOST",
     ]  # fmt: skip
     critical_threshold: float = 0.7
     warning_threshold: float = 0.5

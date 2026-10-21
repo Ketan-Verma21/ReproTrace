@@ -1,0 +1,4 @@
+{
+  "description": "LANG names a locale that is not installed on bad",
+  "cause": {"kinds": ["env_diff", "result_mismatch", "file_only_in_b"], "contains": ["LANG", "de_DE"]}
+}

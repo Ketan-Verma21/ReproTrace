@@ -206,3 +206,14 @@ def test_env_values_are_redacted_for_display() -> None:
 def test_empty_side_is_rejected() -> None:
     with pytest.raises(ValueError):
         compare_sides(Side("a", []), side("b", ["local_timeout"]))
+
+
+def test_child_that_never_execs_pairs_with_its_counterpart() -> None:
+    """path_binary: on bad every exec of `greet` fails, so the child has no program name."""
+    a = build_process_tree(normalize_events(parsed("eval_path_binary_good_1")))
+    b = build_process_tree(normalize_events(parsed("eval_path_binary_bad_1")))
+    failed = [label for label, node in b.items() if node.parent and node.key == ""]
+    assert failed, "the bad side should have a child whose exec never succeeded"
+    match = match_processes(a, b)
+    assert not match.only_a and not match.only_b
+    assert any(b_label in failed and a[a_label].key == "greet" for a_label, b_label in match.pairs)

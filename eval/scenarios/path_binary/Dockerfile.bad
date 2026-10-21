@@ -1,0 +1,8 @@
+FROM reprotrace-eval-base
+COPY app.py /app/app.py
+COPY run.sh /scenario/run.sh
+# COPY keeps the host file mode; the scenario runs as a non-root user.
+RUN chmod 644 /app/app.py /scenario/run.sh
+ENV PATH=/opt/tools/bin:/usr/local/bin:/usr/bin:/bin
+# The planted cause: the helper program is not installed.
+RUN mkdir -p /opt/tools/bin

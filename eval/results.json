@@ -1,0 +1,214 @@
+{
+  "measured_on": "2026-10-21",
+  "runs_per_side": 3,
+  "results": [
+    {
+      "name": "dependency_version",
+      "description": "mylib 2.1.0 installed on good, 1.9.0 on bad (same import path, different metadata)",
+      "cause_rank": 1,
+      "cause_summary": "openat /opt/deps/mylib-1.9.0.dist-info/METADATA (OK) only on bad",
+      "divergences": 9,
+      "above_cause": 0,
+      "warnings": 4,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 113.5,
+      "untraced_ms": 37.054349000148555,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.0630682514364227
+    },
+    {
+      "name": "locale",
+      "description": "LANG names a locale that is not installed on bad",
+      "cause_rank": 1,
+      "cause_summary": "Environment variable LANG: C.UTF-8 on good, de_DE.UTF-8 on bad",
+      "divergences": 52,
+      "above_cause": 0,
+      "warnings": 3,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 63,
+      "untraced_ms": 15.722553331822079,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 4.006982750854435
+    },
+    {
+      "name": "missing_ca_bundle",
+      "description": "CA bundle deleted from the image; OpenSSL loads no trusted certificates",
+      "cause_rank": 1,
+      "cause_summary": "openat /usr/lib/ssl/cert.pem: OK on good, ENOENT on bad",
+      "divergences": 5,
+      "above_cause": 0,
+      "warnings": 1,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 79.66666666666667,
+      "untraced_ms": 28.92702083287683,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 2.7540570847904946
+    },
+    {
+      "name": "missing_config_file",
+      "description": "settings.toml shipped on good, missing on bad",
+      "cause_rank": 1,
+      "cause_summary": "openat /app/settings.toml: OK on good, ENOENT on bad",
+      "divergences": 9,
+      "above_cause": 0,
+      "warnings": 1,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 31,
+      "untraced_ms": 8.558340335487932,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.6221976206596618
+    },
+    {
+      "name": "missing_env_var",
+      "description": "Required variable API_BASE_URL missing on bad",
+      "cause_rank": 1,
+      "cause_summary": "Environment variable API_BASE_URL: https://api.example.com on good, (not set) on bad",
+      "divergences": 7,
+      "above_cause": 0,
+      "warnings": 1,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 31,
+      "untraced_ms": 8.745386665395927,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.544726057986888
+    },
+    {
+      "name": "path_binary",
+      "description": "Helper program greet present on PATH on good, missing on bad",
+      "cause_rank": 1,
+      "cause_summary": "execve /opt/tools/bin/greet: OK on good, ENOENT on bad",
+      "divergences": 21,
+      "above_cause": 0,
+      "warnings": 2,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 63,
+      "untraced_ms": 18.93002549938198,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.328046230157313
+    },
+    {
+      "name": "permission",
+      "description": "config.ini readable on good, owner-only (root) on bad; the app runs as a normal user",
+      "cause_rank": 1,
+      "cause_summary": "openat /app/config.ini: OK on good, EACCES on bad",
+      "divergences": 9,
+      "above_cause": 0,
+      "warnings": 1,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 31.166666666666668,
+      "untraced_ms": 9.577033666573698,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.2543131570526187
+    },
+    {
+      "name": "timezone",
+      "description": "TZ set to UTC+05:30 on good, unset (UTC) on bad",
+      "cause_rank": 1,
+      "cause_summary": "Environment variable TZ: IST-5:30 on good, (not set) on bad",
+      "divergences": 7,
+      "above_cause": 0,
+      "warnings": 3,
+      "runs_needed": 1,
+      "rank_with_one_run": 1,
+      "traced_ms": 31,
+      "untraced_ms": 9.269483166766198,
+      "exit_codes": {
+        "good": [
+          0,
+          0,
+          0
+        ],
+        "bad": [
+          1,
+          1,
+          1
+        ]
+      },
+      "overhead": 3.3443072760673482
+    }
+  ]
+}

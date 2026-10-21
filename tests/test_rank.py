@@ -229,3 +229,47 @@ def test_session_variables_are_weak_but_behavioural_ones_are_not() -> None:
         "TZ",
     ):
         assert not _is_session_var(name, config)
+
+
+# --- Phase 8: rules found with the evaluation scenarios (real captures, eval_*) ---------
+
+
+def test_env_value_in_a_path_makes_the_path_a_consequence() -> None:
+    """TZ missing on bad: the zoneinfo/localtime probes follow from it and rank below it."""
+    ranked = rank_divergences(compared("eval_timezone_good", "eval_timezone_bad"))
+    assert ranked[0].summary.startswith("Environment variable TZ:")
+    assert severity(ranked[0]) == "CRITICAL"
+    assert any("missing where the command failed" in r for r in ranked[0].reasons)
+    zone = next(d for d in ranked if "IST-5:30" in d.summary and d.kind != "env_diff")
+    assert any("the value of TZ" in r for r in zone.reasons)
+
+
+def test_hostname_is_a_weak_machine_variable() -> None:
+    ranked = rank_divergences(compared("eval_timezone_good", "eval_timezone_bad"))
+    host = next(d for d in ranked if "HOSTNAME" in d.summary)
+    assert severity(host) == "INFO"
+    assert any("specific to the machine" in r for r in host.reasons)
+    assert not any("where the command failed" in r for r in host.reasons)
+
+
+def test_failed_exec_search_ranks_first() -> None:
+    ranked = rank_divergences(compared("eval_path_binary_good", "eval_path_binary_bad"))
+    assert ranked[0].summary == "execve /opt/tools/bin/greet: OK on good, ENOENT on bad"
+    assert not any(d.kind.startswith("process_only") for d in ranked)
+
+
+def test_env_failure_credit() -> None:
+    from reprotrace.diff.rank import _env_failure
+
+    def credit(values: tuple[str | None, str | None], key: str = "APP_MODE") -> float:
+        d = Divergence(id="d1", kind="env_diff", summary="s", a_event_ids=[], b_event_ids=[])
+        fake = Comparison("good", "bad", 1, 1, [d], failing_side="b")
+        return _env_failure(Evidence([], [], -1, key, values), fake, RankConfig())[0]
+
+    full = RankConfig().one_sided_failure_value
+    assert credit(("prod", None)) == full  # missing on the failing side
+    assert credit(("de", "en")) == full  # different value
+    assert credit((None, "x")) == 0.0  # only on the failing side
+    assert credit(("/usr/bin", "/opt/bin"), key="PATH") == 0.0  # path-valued
+    assert credit(("a", "b"), key="HOSTNAME") == 0.0  # machine-specific
+    assert credit(("a", "b"), key="GITHUB_SHA") == 0.0  # CI platform

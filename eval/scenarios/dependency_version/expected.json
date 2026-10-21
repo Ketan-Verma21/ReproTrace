@@ -1,0 +1,4 @@
+{
+  "description": "mylib 2.1.0 installed on good, 1.9.0 on bad (same import path, different metadata)",
+  "cause": {"kinds": ["file_only_in_a", "file_only_in_b", "result_mismatch"], "contains": ["mylib-1.9.0", "mylib-2.1.0"]}
+}

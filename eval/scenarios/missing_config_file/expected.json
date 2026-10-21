@@ -1,0 +1,4 @@
+{
+  "description": "settings.toml shipped on good, missing on bad",
+  "cause": {"kinds": ["result_mismatch"], "contains": ["settings.toml"]}
+}

@@ -108,17 +108,33 @@ def _match_lists(
     b_by_key: dict[str, list[str]] = defaultdict(list)
     for label in b_labels:
         b_by_key[b_tree[label].key].append(label)
-    matched_b: set[str] = set()
+    pairs: list[tuple[str, str]] = []
+    unmatched_a: list[str] = []
     for a_label in a_labels:
         candidates = b_by_key.get(a_tree[a_label].key)
-        if not candidates:
-            result.only_a.append(a_label)
-            continue
-        b_label = candidates.pop(0)
-        matched_b.add(b_label)
+        if candidates:
+            pairs.append((a_label, candidates.pop(0)))
+        else:
+            unmatched_a.append(a_label)
+    paired_b = {b for _, b in pairs}
+    unmatched_b = [label for label in b_labels if label not in paired_b]
+    # Fallback, in creation order: a child that never managed to exec (key "") pairs with
+    # the corresponding child on the other side, so a failed exec shows up as the same call
+    # with a different result instead of two unrelated "extra process" findings.
+    for a_label in list(unmatched_a):
+        partner = next(
+            (b for b in unmatched_b if a_tree[a_label].key == "" or b_tree[b].key == ""), None
+        )
+        if partner is not None:
+            pairs.append((a_label, partner))
+            unmatched_a.remove(a_label)
+            unmatched_b.remove(partner)
+    order = {label: index for index, label in enumerate(a_labels)}
+    for a_label, b_label in sorted(pairs, key=lambda pair: order[pair[0]]):
         result.pairs.append((a_label, b_label))
         _match_lists(a_tree[a_label].children, b_tree[b_label].children, a_tree, b_tree, result)
-    result.only_b.extend(label for label in b_labels if label not in matched_b)
+    result.only_a.extend(unmatched_a)
+    result.only_b.extend(unmatched_b)
 
 
 def match_processes(a_tree: dict[str, ProcessNode], b_tree: dict[str, ProcessNode]) -> ProcessMatch:

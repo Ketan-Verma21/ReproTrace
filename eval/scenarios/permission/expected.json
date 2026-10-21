@@ -1,0 +1,4 @@
+{
+  "description": "config.ini readable on good, owner-only (root) on bad; the app runs as a normal user",
+  "cause": {"kinds": ["result_mismatch"], "contains": ["config.ini"]}
+}

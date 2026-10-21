@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "run_a86669c5088f",
+  "label": "bad",
+  "group_id": "grp_d017c14f1ab4",
+  "command": [
+    "sh",
+    "/scenario/run.sh"
+  ],
+  "exit_code": 1,
+  "timed_out": false,
+  "duration_ms": 164,
+  "started_at": "2026-10-21T12:51:42.840484Z",
+  "git_commit": null,
+  "trace_path": "runs/run_a86669c5088f/raw.strace",
+  "env_redacted": {
+    "HOME": "/tmp",
+    "HOSTNAME": "bb76504b1c25",
+    "LANG": "C.UTF-8",
+    "PATH": "/opt/tools/bin:/usr/local/bin:/usr/bin:/bin",
+    "PWD": "/out",
+    "TIMING": "import json, subprocess, time\ntimes = []\nfor _ in range(3):\n    start = time.perf_counter()\n    subprocess.run(['sh', '/scenario/run.sh'], capture_output=True)\n    times.append((time.perf_counter() - start) * 1000)\nprint('UNTRACED_MS=' + json.dumps(times))\n"
+  }
+}
