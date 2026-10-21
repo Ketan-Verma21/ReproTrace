@@ -133,3 +133,97 @@ class NoiseProfile(BaseModel):
     run_ids: list[str]
     stable_count: int
     unstable: list[str]
+
+
+DIVERGENCE_SCHEMA_VERSION = 1
+DIFF_CONFIG_SCHEMA_VERSION = 1
+
+# Environment variables that differ between any two shells or runs without changing
+# program behavior.
+DEFAULT_IGNORED_ENV_VARS: tuple[str, ...] = ("_", "OLDPWD", "PWD", "SHLVL", "TERM_SESSION_ID")
+
+
+class DiffConfig(BaseModel):
+    """Settings for comparing two environments."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = DIFF_CONFIG_SCHEMA_VERSION
+    ignored_env_vars: list[str] = list(DEFAULT_IGNORED_ENV_VARS)
+
+
+class Divergence(BaseModel):
+    """One behavioral difference between two environments (Architecture.md 4.2).
+
+    ``score`` and ``reasons`` are filled by the ranker (Phase 5); until then they are
+    0.0 and empty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = DIVERGENCE_SCHEMA_VERSION
+    id: str
+    kind: str
+    summary: str
+    a_event_ids: list[str]
+    b_event_ids: list[str]
+    score: float = 0.0
+    reasons: list[str] = []
+
+
+RANK_CONFIG_SCHEMA_VERSION = 1
+
+SignalName = Literal[
+    "failed_one_side",
+    "category",
+    "earliest_in_process",
+    "stability",
+    "proximity_to_failing_exit",
+    "not_failure_consequence",
+]
+
+
+class RankConfig(BaseModel):
+    """All ranking weights in one place (Phases.md task 5.3). Ranking is a heuristic.
+
+    ``weights``: how much each signal (0..1) counts in the score.
+    ``category_weights``: the 0..1 value of the ``category`` signal per divergence kind;
+    ``*_only_in_a`` / ``*_only_in_b`` kinds are looked up without the side suffix.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: int = RANK_CONFIG_SCHEMA_VERSION
+    weights: dict[SignalName, float] = {
+        "failed_one_side": 3.0,
+        "category": 2.0,
+        "earliest_in_process": 2.0,
+        "stability": 1.0,
+        "proximity_to_failing_exit": 1.0,
+        "not_failure_consequence": 3.0,
+    }
+    category_weights: dict[str, float] = {
+        "result_mismatch": 1.0,
+        "env_diff": 0.8,
+        "executable_mismatch": 0.8,
+        "library_mismatch": 0.7,
+        "exec_only": 0.6,
+        "net_only": 0.6,
+        "process_only": 0.6,
+        "file_only": 0.5,
+        "proc_only": 0.3,
+        "other_only": 0.2,
+        "exit_status_mismatch": 0.2,
+    }
+    default_category_weight: float = 0.3
+    # A failing call seen on one side only (no counterpart) is weaker evidence than the
+    # same call succeeding on one side and failing on the other.
+    one_sided_failure_value: float = 0.4
+    # Error codes that report a normal condition rather than a failure: "not a terminal",
+    # "would block", "connection in progress", "no child", interrupted-and-restarted calls.
+    benign_errnos: list[str] = [
+        "ENOTTY", "EAGAIN", "EINPROGRESS", "EINTR", "ECHILD", "ERESTARTSYS",
+        "ERESTARTNOHAND", "ERESTARTNOINTR", "ERESTART_RESTARTBLOCK",
+    ]  # fmt: skip
+    critical_threshold: float = 0.7
+    warning_threshold: float = 0.5

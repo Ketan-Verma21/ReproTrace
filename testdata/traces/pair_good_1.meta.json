@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "run_252f921d3c4c",
+  "label": "good",
+  "group_id": "grp_0391e9a481d7",
+  "command": [
+    "python3",
+    "-c",
+    "import time; time.localtime(); open('settings.toml').read()"
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "duration_ms": 374,
+  "started_at": "2026-10-21T09:13:11.815504Z",
+  "git_commit": null,
+  "trace_path": "runs/run_252f921d3c4c/raw.strace",
+  "env_redacted": {
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin",
+    "TZ": "UTC"
+  }
+}

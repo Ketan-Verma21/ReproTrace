@@ -27,6 +27,9 @@ _MEANINGFUL_OPEN_FLAGS = (
     "O_RDONLY", "O_WRONLY", "O_RDWR", "O_CREAT", "O_EXCL", "O_TRUNC", "O_APPEND",
     "O_DIRECTORY",
 )  # fmt: skip
+# Different C libraries make the same request with different syscalls; signatures use one
+# name so a glibc/musl or kernel difference does not look like a behavior difference.
+_FD_STAT_FORMS = frozenset({"newfstatat", "fstatat64", "statx"})
 _CWD_ANNOTATION = re.compile(r"AT_FDCWD<([^>]*)>")
 # A path prefix ends at a separator, quote, annotation end, comma, space, or end of text.
 _PATH_END = r"(?=[/\"'>:,\s\]\)]|$)"
@@ -168,7 +171,7 @@ class Normalizer:
         ``target`` must already be normalized. PIDs, fds, sizes and other results are left
         out; only the outcome (``ok``, an errno, or ``unfinished``) is kept.
         """
-        syscall = event.syscall
+        syscall = _canonical_syscall(event)
         outcome = _outcome(event)
         if syscall in _OPEN_SYSCALLS:
             return f"{syscall}|{target or ''}|{_open_flags(event)}|{outcome}"
@@ -188,6 +191,15 @@ class Normalizer:
             sock_type = self._arg(event, 1).split("|")[0]
             return f"socket|{self._arg(event, 0)}|{sock_type}|{outcome}"
         return f"{syscall}|{target or ''}|{outcome}"
+
+
+def _canonical_syscall(event: Event) -> str:
+    """``open`` -> ``openat``; ``newfstatat(fd, "", AT_EMPTY_PATH)`` -> ``fstat``."""
+    if event.syscall == "open":
+        return "openat"
+    if event.syscall in _FD_STAT_FORMS and len(event.args) > 1 and event.args[1] == '""':
+        return "fstat"
+    return event.syscall
 
 
 def _outcome(event: Event) -> str:

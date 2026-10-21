@@ -11,7 +11,11 @@ from reprotrace.models import Event
 from reprotrace.parse.run import parse_run
 from reprotrace.parse.strace_parser import parse_lines
 from reprotrace.report.run_summary import build_run_summary, render_run_summary
-from reprotrace.store.run_files import load_run
+from reprotrace.store.run_files import load_group, load_run, resolve_runs
+
+
+def plain(lines) -> str:
+    return "\n".join(line.plain for line in lines)
 
 
 def summary_of(name: str):
@@ -39,17 +43,17 @@ def test_connections() -> None:
 
 def test_render_mentions_counts_and_limits() -> None:
     summary = summary_of("local_python_missing_file")
-    text = "\n".join(render_run_summary(summary, limit=1))
+    text = plain(render_run_summary(summary, limit=1))
     assert "0 unparsed" in text
     assert f"Files that failed to open ({len(summary.failed_opens)})" in text
     assert "more hidden (use --all)" in text
-    full = "\n".join(render_run_summary(summary, limit=None))
+    full = plain(render_run_summary(summary, limit=None))
     assert "/nonexistent/config.toml" in full
 
 
 def test_render_timeout_and_signal_outcomes() -> None:
-    assert "Outcome: timed out" in "\n".join(render_run_summary(summary_of("local_timeout")))
-    killed = "\n".join(render_run_summary(summary_of("local_killed_by_signal")))
+    assert "Outcome: timed out" in plain(render_run_summary(summary_of("local_timeout")))
+    killed = plain(render_run_summary(summary_of("local_killed_by_signal")))
     assert "Outcome: killed by signal 15" in killed
 
 
@@ -86,3 +90,17 @@ def test_load_run_missing_and_invalid_ids(tmp_path: Path) -> None:
         load_run(tmp_path, "run_000000000000")
     with pytest.raises(StoreError, match="Invalid run id"):
         load_run(tmp_path, "../etc")
+
+
+def test_resolve_runs_by_group_and_run(tmp_path: Path) -> None:
+    first = _install_fixture_run(tmp_path, "pair_good_1")
+    second = _install_fixture_run(tmp_path, "pair_good_2")
+    group_id = fixture_run("pair_good_1").group_id
+    runs = resolve_runs(tmp_path, group_id)
+    assert [r.id for r in runs] == [first, second]
+    assert [r.id for r in resolve_runs(tmp_path, first)] == [first]
+
+
+def test_unknown_group_raises(tmp_path: Path) -> None:
+    with pytest.raises(StoreError, match="Group not found"):
+        load_group(tmp_path, "grp_000000000000")

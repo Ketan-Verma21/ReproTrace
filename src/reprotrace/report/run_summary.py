@@ -2,7 +2,10 @@
 
 from dataclasses import dataclass, field
 
+from rich.text import Text
+
 from reprotrace.models import Event, ParseStats, Run
+from reprotrace.report.terminal import shorten_paths, styled
 
 _OPEN_SYSCALLS = frozenset({"open", "openat", "openat2", "creat"})
 _EXEC_SYSCALLS = frozenset({"execve", "execveat"})
@@ -56,44 +59,63 @@ def build_run_summary(run: Run, events: list[Event], stats: ParseStats) -> RunSu
     return summary
 
 
-def _outcome_line(run: Run) -> str:
+def outcome_text(run: Run) -> Text:
+    """``exit 0`` (success), ``exit 1`` / ``timed out`` / ``killed by signal N`` (critical)."""
     if run.timed_out:
-        return "timed out"
+        return styled("timed out", "critical")
     if run.exit_code is not None and run.exit_code < 0:
-        return f"killed by signal {-run.exit_code}"
-    return f"exit {run.exit_code}"
+        return styled(f"killed by signal {-run.exit_code}", "critical")
+    return styled(f"exit {run.exit_code}", "success" if run.exit_code == 0 else "critical")
 
 
-def _section(title: str, items: list[SummaryItem], limit: int | None) -> list[str]:
-    lines = [f"{title} ({len(items)})"]
+def _section(title: str, items: list[SummaryItem], limit: int | None) -> list[Text]:
+    lines = [Text.assemble(styled(title, "accent"), f" ({len(items)})")]
     if not items:
-        return [*lines, "  none", ""]
+        return [*lines, styled("  none", "muted"), Text()]
     shown = items if limit is None else items[:limit]
     for item in shown:
         repeat = f" x{item.count}" if item.count > 1 else ""
-        lines.append(f"  - {item.target}  {item.outcome}{repeat}  [{item.first_event_id}]")
+        role = "success" if item.outcome == "OK" else "warning"
+        lines.append(
+            Text.assemble(
+                f"  - {shorten_paths(item.target)}  ",
+                styled(f"{item.outcome}{repeat}", role),
+                "  ",
+                styled(f"[{item.first_event_id}]", "muted"),
+            )
+        )
     hidden = len(items) - len(shown)
     if hidden:
-        lines.append(f"  {hidden} more hidden (use --all)")
-    return [*lines, ""]
+        lines.append(styled(f"  {hidden} more hidden (use --all)", "muted"))
+    return [*lines, Text()]
 
 
-def render_run_summary(summary: RunSummary, limit: int | None = 10) -> list[str]:
-    """Render a summary as plain text lines; ``limit=None`` shows every item."""
+def render_run_summary(summary: RunSummary, limit: int | None = 10) -> list[Text]:
+    """Render a summary as lines; ``limit=None`` shows every item."""
     run, stats = summary.run, summary.stats
+    unparsed_role = "success" if stats.unparsed_count == 0 else "warning"
     lines = [
-        f"Run {run.id}  |  label {run.label}  |  group {run.group_id}",
-        f"Command: {' '.join(run.command)}",
-        f"Outcome: {_outcome_line(run)}, {run.duration_ms} ms",
-        (
-            f"Parsed: {stats.event_count} events from {stats.total_lines} lines; "
-            f"{stats.unparsed_count} unparsed, {stats.merged_pairs} merged "
-            f"unfinished/resumed pairs, {stats.unmatched_unfinished} never resumed"
+        Text.assemble(
+            styled(f"Run {run.id}", "accent"),
+            "  |  label ",
+            styled(run.label, "accent"),
+            "  |  group ",
+            styled(run.group_id, "muted"),
         ),
-        "",
+        Text(f"Command: {' '.join(run.command)}"),
+        Text.assemble("Outcome: ", outcome_text(run), f", {run.duration_ms} ms"),
+        Text.assemble(
+            f"Parsed: {stats.event_count} events from {stats.total_lines} lines; ",
+            styled(f"{stats.unparsed_count} unparsed", unparsed_role),
+            f", {stats.merged_pairs} merged unfinished/resumed pairs, "
+            f"{stats.unmatched_unfinished} never resumed",
+        ),
+        Text(),
     ]
     lines += _section("Files that failed to open", summary.failed_opens, limit)
     lines += _section("Programs executed", summary.programs, limit)
     lines += _section("Connections attempted", summary.connections, limit)
-    lines.append("Evidence ids in [brackets] refer to events.jsonl in the run folder.")
+    lines.append(
+        styled("Evidence ids in [brackets] refer to events.jsonl in the run folder.", "muted")
+    )
     return lines

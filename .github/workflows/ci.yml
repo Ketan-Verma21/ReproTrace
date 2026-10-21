@@ -1,0 +1,72 @@
+# CI for ReproTrace.
+#   test:    lint and run the test suite (needs strace: several tests trace real commands).
+#   capture: example of capturing the CI side of a command and uploading the run folder,
+#            so it can be compared with a local capture (see docs/CI.md).
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install strace
+        run: sudo apt-get update -q && sudo apt-get install -y -q strace
+      - name: Install ReproTrace
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Test
+        run: pytest -q
+
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install strace and ReproTrace
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q strace
+          python -m pip install -e .
+      - name: Capture the CI side
+        # strace -v records the full environment of the traced command in raw.strace, and
+        # the run folder is uploaded as an artifact. Unset anything that looks like a secret
+        # first, and never put secrets in this step's env. See docs/CI.md.
+        run: |
+          for name in $(compgen -e); do
+            case "${name^^}" in
+              *TOKEN*|*SECRET*|*KEY*|*PASSWORD*|*PASSWD*|*CREDENTIAL*|*AUTH*) unset "$name" ;;
+            esac
+          done
+          # Replace this example with the command you want to compare, e.g.
+          #   reprotrace capture --label ci --runs 2 -- pytest tests/test_api.py
+          # The command's own exit code is recorded in meta.json; capture itself exits 0.
+          reprotrace capture --label ci --runs 2 -- \
+            python3 -c "import time; time.localtime(); open('settings.toml').read()"
+      - name: Upload the run folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: reprotrace-ci-runs
+          path: .reprotrace/runs/
+          # .reprotrace is a hidden directory; upload-artifact skips those by default.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7

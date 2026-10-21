@@ -41,7 +41,7 @@ def test_ids_are_stable_and_sequential(name: str) -> None:
 
 
 def test_fixture_list_is_complete() -> None:
-    assert len(ALL_FIXTURES) == 13
+    assert len(ALL_FIXTURES) == 21
 
 
 # --- merge of <unfinished ...> / <... resumed> ---------------------------------------

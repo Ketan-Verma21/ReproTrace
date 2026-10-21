@@ -15,6 +15,7 @@ from reprotrace import config
 from reprotrace.capture.redact import redact_env
 from reprotrace.errors import EXIT_ENVIRONMENT_ERROR, CaptureError
 from reprotrace.models import Run
+from reprotrace.store.db import connect, upsert_run
 
 log = logging.getLogger(__name__)
 
@@ -204,4 +205,10 @@ def capture_group(
     if timeout_s <= 0:
         raise CaptureError(f"--timeout must be positive, got {timeout_s}.")
     group_id = new_id("grp")
-    return [capture_run(command, label, group_id, base_dir, timeout_s, env) for _ in range(runs)]
+    captured = [
+        capture_run(command, label, group_id, base_dir, timeout_s, env) for _ in range(runs)
+    ]
+    with connect(base_dir) as conn:
+        for run in captured:
+            upsert_run(conn, run)
+    return captured

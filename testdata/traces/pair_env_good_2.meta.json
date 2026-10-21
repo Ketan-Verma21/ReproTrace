@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "run_232d4a369da7",
+  "label": "good",
+  "group_id": "grp_d5f20f42855a",
+  "command": [
+    "python3",
+    "-c",
+    "import os; print(os.environ['APP_MODE'])"
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "duration_ms": 31,
+  "started_at": "2026-10-21T09:26:32.710570Z",
+  "git_commit": null,
+  "trace_path": "runs/run_232d4a369da7/raw.strace",
+  "env_redacted": {
+    "APP_MODE": "prod",
+    "HOME": "/home/ketan",
+    "LANG": "C.UTF-8",
+    "PATH": "/home/ketan/Code/Python/Reprotrace/.venv/bin:/usr/bin:/bin"
+  }
+}
