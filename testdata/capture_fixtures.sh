@@ -44,7 +44,7 @@ PY
 #   RUNS=1 -> OUT/NAME.strace and OUT/NAME.meta.json
 #   RUNS>1 -> OUT/NAME_1.strace ... (one group, same environment)
 # Optional variables set on the call: LABEL (default fixture), TZ_VALUE (adds TZ to the
-# environment), EXTRA_ENV (one NAME=value added to the environment), SETTINGS_FILE=1
+# environment), EXTRA_ENV (space-separated NAME=value entries added), SETTINGS_FILE=1
 # (creates settings.toml in the working directory first).
 capture() {
   local name=$1 runs=$2 timeout=$3
@@ -54,7 +54,11 @@ capture() {
   base="$(mktemp -d)"
   local env_cmd=("${CLEAN_ENV[@]}")
   [[ -n "${TZ_VALUE:-}" ]] && env_cmd+=("TZ=$TZ_VALUE")
-  [[ -n "${EXTRA_ENV:-}" ]] && env_cmd+=("$EXTRA_ENV")
+  if [[ -n "${EXTRA_ENV:-}" ]]; then
+    local extra
+    read -ra extra <<<"$EXTRA_ENV"
+    env_cmd+=("${extra[@]}")
+  fi
   [[ -n "${SETTINGS_FILE:-}" ]] && printf 'debug = false\n' >"$base/settings.toml"
   (cd "$base" && "${env_cmd[@]}" reprotrace capture --label "${LABEL:-fixture}" --runs "$runs" \
     --timeout "$timeout" -- "$@")
@@ -90,6 +94,15 @@ capture repeat_multiprocess 3 60 sh -c 'ls /etc/hostname /nonexistent; cat /etc/
 PAIR_CMD=(python3 -c "import time; time.localtime(); open('settings.toml').read()")
 LABEL=good TZ_VALUE=UTC SETTINGS_FILE=1 capture pair_good 2 60 "${PAIR_CMD[@]}"
 LABEL=bad TZ_VALUE=Asia/Kolkata capture pair_bad 2 60 "${PAIR_CMD[@]}"
+
+# Like pair_good, but with variables a developer's shell typically has and CI does not
+# (all values invented and harmless). Compared with ci_github_*: many variables are missing
+# on the failing side, none of them the cause (regression for env failure credit, Phase 10).
+DESKTOP_ENV="LANG=en_IN AWS_DEFAULT_REGION=us-east-1 AWS_PROFILE=dev AWS_ACCESS_KEY_ID=dummy \
+AWS_SECRET_ACCESS_KEY=dummy EDITOR=vim PAGER=less GIT_EDITOR=vim NODE_ENV=development \
+DOCKER_BUILDKIT=1 PYTHONDONTWRITEBYTECODE=1 HISTSIZE=10000 MANPAGER=less"
+LABEL=local TZ_VALUE=UTC SETTINGS_FILE=1 EXTRA_ENV="$DESKTOP_ENV" \
+  capture pair_desktop 2 60 "${PAIR_CMD[@]}"
 
 # Second pair for Phase 5 (ranking): the cause is a missing environment variable.
 #   good: APP_MODE=prod   -> exit 0

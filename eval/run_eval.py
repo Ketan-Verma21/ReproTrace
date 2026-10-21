@@ -3,6 +3,7 @@
     python eval/run_eval.py                    # build images, run every scenario, write results
     python eval/run_eval.py --scenario locale  # one scenario
     python eval/run_eval.py --update-readme    # also replace the results block in README.md
+    python eval/run_eval.py --explain          # also check AI explanations (GEMINI_API_KEY)
 
 Each scenario folder in eval/scenarios/ has an app, a Dockerfile for the working ("good") and
 the broken ("bad") environment, run.sh (the traced command) and expected.json (the planted
@@ -28,8 +29,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from reprotrace.ai.explain import explain_bundle  # noqa: E402
+from reprotrace.ai.gemini import GeminiProvider  # noqa: E402
+from reprotrace.ai.redact import build_bundle  # noqa: E402
 from reprotrace.diff.compare import Side, compare_sides  # noqa: E402
 from reprotrace.diff.rank import rank_divergences, severity  # noqa: E402
+from reprotrace.errors import AIError  # noqa: E402
 from reprotrace.models import Divergence  # noqa: E402
 from reprotrace.parse.run import parse_run  # noqa: E402
 from reprotrace.store.run_files import latest_group_for_label  # noqa: E402
@@ -58,6 +63,7 @@ class ScenarioResult:
     traced_ms: float
     untraced_ms: float
     exit_codes: dict[str, list[int | None]] = field(default_factory=dict)
+    ai: dict | None = None
 
     @property
     def overhead(self) -> float | None:
@@ -184,7 +190,37 @@ def evaluate_project(project: Path, cause: dict[str, list[str]], runs: int) -> d
     }
 
 
-def run_scenario(folder: Path, runs: int, work: Path) -> ScenarioResult:
+def explain_project(project: Path, cause: dict[str, list[str]], runs: int, provider) -> dict:
+    """Ask the AI about the full comparison; record whether the answer was valid and grounded.
+
+    "Grounded" here means the validated answer's first hypothesis cites the divergence that
+    matches the planted cause. Invalid answers are counted, never repaired.
+    """
+    good = [parse_run(project, r.id).events for r in latest_group_for_label(project, "good")]
+    bad = [parse_run(project, r.id).events for r in latest_group_for_label(project, "bad")]
+    ranked = rank_divergences(compare_sides(Side("good", good[:runs]), Side("bad", bad[:runs])))
+    cause_ids = {d.id for d in ranked if matches(d, cause)}
+    bundle = build_bundle(
+        ranked, {e.id: e for e in good[0] + bad[0]}, labels=("good", "bad"),
+        command=["sh", "/scenario/run.sh"], exits=("exit 0", "exit non-zero"),
+    )  # fmt: skip
+    try:
+        explanation = explain_bundle(bundle, provider, project.parent.name)
+    except AIError as error:
+        return {"valid": False, "error": error.message}
+    first = explanation.hypotheses[0] if explanation.hypotheses else None
+    return {
+        "valid": True,
+        "hypotheses": len(explanation.hypotheses),
+        "top_cites_cause": bool(first and cause_ids & set(first.divergence_ids)),
+        "any_cites_cause": any(cause_ids & set(h.divergence_ids) for h in explanation.hypotheses),
+        "top_confidence": first.confidence if first else None,
+        "top_title": first.title if first else None,
+        "insufficient_evidence": explanation.insufficient_evidence,
+    }
+
+
+def run_scenario(folder: Path, runs: int, work: Path, provider=None) -> ScenarioResult:
     expected = json.loads((folder / "expected.json").read_text())
     build_scenario(folder)
     outs: dict[str, Path] = {}
@@ -202,7 +238,9 @@ def run_scenario(folder: Path, runs: int, work: Path) -> ScenarioResult:
     for side in SIDES:
         check_setup(folder.name, side, exit_codes[side], firsts[side])
     scored = evaluate_project(project, expected["cause"], runs)
+    ai = explain_project(project, expected["cause"], runs, provider) if provider else None
     return ScenarioResult(
+        ai=ai,
         name=folder.name,
         description=expected["description"],
         traced_ms=statistics.mean(m["duration_ms"] for m in metas),
@@ -234,6 +272,9 @@ def results_table(results: list[ScenarioResult], runs: int, measured_on: str) ->
     lines += [
         "",
         f"**Totals:** top-1 {top1}/{len(results)}, top-3 {top3}/{len(results)}.",
+    ]
+    lines += ai_table(results)
+    lines += [
         "",
         "Scenarios are written by the author of ReproTrace, so these numbers describe these "
         "scenarios only; they are not general proof of accuracy. Tracing overhead compares the "
@@ -241,6 +282,36 @@ def results_table(results: list[ScenarioResult], runs: int, measured_on: str) ->
         "command; the commands are short, so start-up dominates.",
     ]
     return "\n".join(lines)
+
+
+def ai_table(results: list[ScenarioResult]) -> list[str]:
+    """Optional AI grounding section (only when the run used --explain)."""
+    checked = [r for r in results if r.ai is not None]
+    if not checked:
+        return []
+    valid = sum(1 for r in checked if r.ai["valid"])
+    top = sum(1 for r in checked if r.ai.get("top_cites_cause"))
+    lines = [
+        "",
+        "AI explanations (`--explain`, optional layer): an answer is valid when it matches the "
+        "schema and every cited divergence and event exists in the comparison.",
+        "",
+        "| Scenario | Valid answer | First hypothesis cites the cause | Any hypothesis cites it | "
+        "Confidence |",
+        "|---|---|---|---|---|",
+    ]
+    for r in checked:
+        ai = r.ai
+        if not ai["valid"]:
+            lines.append(f"| {r.name} | no: {ai['error'][:80].replace('|', '/')} | - | - | - |")
+            continue
+        lines.append(
+            f"| {r.name} | yes | {'yes' if ai['top_cites_cause'] else 'no'} | "
+            f"{'yes' if ai['any_cites_cause'] else 'no'} | {ai['top_confidence'] or '-'} |"
+        )
+    lines += ["", f"**AI totals:** valid {valid}/{len(checked)}, first hypothesis cites the "
+              f"planted cause {top}/{len(checked)}."]  # fmt: skip
+    return lines
 
 
 def update_readme(table: str) -> None:
@@ -268,6 +339,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--keep", action="store_true", help="keep captured runs (prints the folder)"
     )
+    parser.add_argument(
+        "--explain", action="store_true",
+        help="also ask the AI layer about each scenario (needs GEMINI_API_KEY)",
+    )  # fmt: skip
     args = parser.parse_args(argv)
 
     folders = sorted(p for p in SCENARIOS.iterdir() if (p / "expected.json").is_file())
@@ -275,6 +350,12 @@ def main(argv: list[str] | None = None) -> int:
         folders = [p for p in folders if p.name in args.scenario]
         if not folders:
             parser.error(f"unknown scenario(s): {', '.join(args.scenario)}")
+    provider = None
+    if args.explain:
+        try:
+            provider = GeminiProvider.from_env()
+        except AIError as error:
+            parser.error(error.message)
     if not args.no_build_base:
         print("Building base image ...", flush=True)
         build_base()
@@ -284,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
     for folder in folders:
         print(f"Running {folder.name} ...", flush=True)
         try:
-            result = run_scenario(folder, args.runs, work)
+            result = run_scenario(folder, args.runs, work, provider)
         except ScenarioSetupError as error:
             # Scoring a scenario that did not fail as planted would give a meaningless number,
             # so nothing is written (results files and README stay as they were).
@@ -292,6 +373,9 @@ def main(argv: list[str] | None = None) -> int:
             shutil.rmtree(work, ignore_errors=True)
             return 1
         print(f"  cause rank {result.cause_rank}, {result.divergences} divergences", flush=True)
+        if result.ai is not None:
+            verdict = "valid" if result.ai["valid"] else f"rejected: {result.ai['error']}"
+            print(f"  AI answer {verdict}", flush=True)
         results.append(result)
 
     measured_on = datetime.now(UTC).strftime("%Y-%m-%d")

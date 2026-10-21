@@ -9,6 +9,9 @@ import typer
 from rich.text import Text
 
 from reprotrace import __version__, config
+from reprotrace.ai.explain import explain_saved
+from reprotrace.ai.gemini import GeminiProvider
+from reprotrace.ai.redact import DEFAULT_TOP
 from reprotrace.capture.runner import capture_group
 from reprotrace.diff.compare import compare_saved
 from reprotrace.diff.rank import rank_divergences
@@ -17,6 +20,7 @@ from reprotrace.errors import ReproTraceError
 from reprotrace.models import DiffConfig, NormalizationConfig, RankConfig, Run
 from reprotrace.parse.run import parse_run
 from reprotrace.report.diff_text import DEFAULT_LIMIT, render_comparison
+from reprotrace.report.explain_text import render_explanation
 from reprotrace.report.markdown import write_report
 from reprotrace.report.run_summary import build_run_summary, outcome_text, render_run_summary
 from reprotrace.report.runs_text import render_runs
@@ -190,3 +194,34 @@ def report(
     except ReproTraceError as error:
         raise _fail(ctx, error) from error
     _out(ctx, [Text.assemble("Report written to ", styled(str(path), "accent"))])
+
+
+@app.command()
+def explain(
+    ctx: typer.Context,
+    comparison_id: Annotated[
+        str | None,
+        typer.Argument(help="Comparison id printed by 'reprotrace diff' (default: the latest)."),
+    ] = None,
+    model: Annotated[
+        str | None,
+        typer.Option(
+            "--model",
+            help="Gemini model (default: REPROTRACE_GEMINI_MODEL or gemini-flash-latest).",
+        ),
+    ] = None,
+    top: Annotated[
+        int, typer.Option("--top", min=1, max=20, help="How many top divergences to send.")
+    ] = DEFAULT_TOP,
+) -> None:
+    """Optional: AI hypotheses about a saved comparison, citing its evidence.
+
+    Needs GEMINI_API_KEY. Sends only the top divergences, never raw traces or the environment.
+    """
+    try:
+        provider = GeminiProvider.from_env(model)
+        explanation, bundle, path = explain_saved(Path.cwd(), comparison_id, provider, top=top)
+    except ReproTraceError as error:
+        raise _fail(ctx, error) from error
+    total = bundle.data["divergences_total"]
+    _out(ctx, render_explanation(explanation, len(bundle.divergence_ids), total, path))

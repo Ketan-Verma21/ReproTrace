@@ -119,3 +119,54 @@ def test_scenario_images_do_not_depend_on_host_file_modes() -> None:
     for dockerfile in SCENARIOS.glob("*/Dockerfile.*"):
         text = dockerfile.read_text()
         assert "RUN chmod 644 /app/app.py /scenario/run.sh" in text, dockerfile
+
+
+class _CitesFirst:
+    """Fake provider: cites the first divergence in the prompt (no network in tests)."""
+
+    name, model = "fake", "fake-1"
+
+    def generate(self, system: str, prompt: str, schema: dict) -> str:
+        top = json.loads(prompt.split("\n\n", 1)[1])["divergences"][0]
+        event = next(ids[0] for ids in top["event_ids"].values() if ids)
+        return json.dumps({"summary": "s", "insufficient_evidence": False, "hypotheses": [{
+            "title": "t", "explanation": "e", "divergence_ids": [top["id"]],
+            "event_ids": [event], "confidence": "medium", "next_experiment": "n"}]})  # fmt: skip
+
+
+def test_explain_project_grounding_and_table(run_eval, tmp_path: Path) -> None:
+    expected = json.loads((SCENARIOS / "timezone" / "expected.json").read_text())
+    project = _project(tmp_path / "timezone" / "project", "eval_timezone")
+    ai = run_eval.explain_project(project, expected["cause"], 2, _CitesFirst())
+    assert ai["valid"] and ai["top_cites_cause"] and ai["any_cites_cause"]
+
+    class Liar(_CitesFirst):
+        def generate(self, system, prompt, schema):
+            answer = json.loads(super().generate(system, prompt, schema))
+            answer["hypotheses"][0]["event_ids"] = ["run_000000000000:1"]  # made up
+            return json.dumps(answer)
+
+    rejected = run_eval.explain_project(project, expected["cause"], 2, Liar())
+    assert not rejected["valid"] and "cites evidence that was not in" in rejected["error"]
+
+    base = dict(
+        description="d",
+        cause_rank=1,
+        cause_summary="s",
+        divergences=1,
+        above_cause=0,
+        warnings=0,
+        runs_needed=1,
+        rank_with_one_run=1,
+        traced_ms=2.0,
+        untraced_ms=1.0,
+    )
+    rows = [run_eval.ScenarioResult(name="timezone", ai=ai, **base),
+            run_eval.ScenarioResult(name="locale", ai=rejected, **base)]  # fmt: skip
+    table = run_eval.results_table(rows, 2, "2026-01-01")
+    assert "| timezone | yes | yes | yes | medium |" in table
+    assert "| locale | no: " in table
+    assert "**AI totals:** valid 1/2, first hypothesis cites the planted cause 1/2." in table
+    assert "AI totals" not in run_eval.results_table(
+        [run_eval.ScenarioResult(name="x", **base)], 1, "d"
+    )

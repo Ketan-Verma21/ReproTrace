@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from conftest import fixture_lines, install_fixture_run
+from reprotrace import __version__
 from reprotrace.diff.compare import compare_saved
 from reprotrace.diff.rank import rank_divergences
 from reprotrace.diff.record import record_comparison
@@ -41,7 +42,7 @@ def test_report_has_every_section(report: tuple[Path, str]) -> None:
     for heading in headings:
         assert heading in text
     assert "**Before sharing:**" in text.split("## Summary")[0]
-    assert "Generated " in text and "by reprotrace 0.0.1" in text
+    assert "Generated " in text and f"by reprotrace {__version__}" in text
 
 
 def test_report_headline_names_the_likely_cause(report: tuple[Path, str]) -> None:

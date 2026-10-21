@@ -14,7 +14,8 @@ from pathlib import Path
 from reprotrace import __version__, config
 from reprotrace.capture.redact import REDACTED, looks_like_token, redact_value
 from reprotrace.diff.rank import severity
-from reprotrace.models import Divergence, Event, RankConfig, Run
+from reprotrace.errors import ReproTraceError
+from reprotrace.models import Divergence, Event, Explanation, RankConfig, Run
 from reprotrace.parse.run import parse_run
 from reprotrace.parse.syscalls import execve_env
 from reprotrace.store.db import (
@@ -24,6 +25,7 @@ from reprotrace.store.db import (
     load_comparison,
     set_report_path,
 )
+from reprotrace.store.explanations import load_explanation
 from reprotrace.store.run_files import load_run, read_events
 
 TOP_DETAILED = 10
@@ -86,7 +88,8 @@ def _cell(text: str) -> str:
     return _md(text).replace("|", "\\|").replace("\n", " ")
 
 
-def _exit_text(run: Run) -> str:
+def exit_text(run: Run) -> str:
+    """How a run ended, in words."""
     if run.timed_out:
         return "timed out"
     if run.exit_code is not None and run.exit_code < 0:
@@ -108,6 +111,44 @@ def _evidence_block(d: Divergence, labels: tuple[str, str], events: dict[str, Ev
     return block
 
 
+def ungrounded_citations(explanation: Explanation, ranked: list[Divergence]) -> list[str]:
+    """Citations of a stored explanation that do not resolve in this comparison."""
+    by_id = {d.id: set(d.a_event_ids) | set(d.b_event_ids) for d in ranked}
+    bad: list[str] = []
+    for hypothesis in explanation.hypotheses:
+        bad += [d for d in hypothesis.divergence_ids if d not in by_id]
+        allowed = set().union(*(by_id.get(d, set()) for d in hypothesis.divergence_ids))
+        bad += [e for e in hypothesis.event_ids if e not in allowed]
+    return bad
+
+
+def _ai_section(explanation: Explanation, ranked: list[Divergence]) -> list[str]:
+    rank_of = {d.id: (rank, d) for rank, d in enumerate(ranked, start=1)}
+    stamp = explanation.generated_at.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    out = ["## AI explanation", ""]
+    out.append(
+        f"> **AI-generated hypotheses** ({explanation.provider}, model `{explanation.model}`, "
+        f"{stamp}). They were produced from the ranked evidence above only, every citation "
+        "was checked to exist, but the reasoning can still be wrong. Treat them as leads to "
+        "verify, not as findings."
+    )
+    out += ["", _md(explanation.summary), ""]
+    if explanation.insufficient_evidence:
+        out += ["The model judged the evidence insufficient to explain the failure.", ""]
+    for number, h in enumerate(explanation.hypotheses, start=1):
+        out += [f"### Hypothesis {number}: {_md(h.title)} ({h.confidence} confidence)", ""]
+        out += [_md(h.explanation), ""]
+        cited = []
+        for d_id in h.divergence_ids:
+            rank, d = rank_of[d_id]
+            cited.append(f"`{d_id}` (rank {rank}: {_md(d.summary)})")
+        out.append(f"- **Divergences cited:** {'; '.join(cited)}")
+        out.append(f"- **Events cited:** {', '.join(f'`{e}`' for e in h.event_ids)}")
+        out.append(f"- **Next experiment:** {_md(h.next_experiment)}")
+        out.append("")
+    return out
+
+
 def render_report(
     stored: StoredComparison,
     a_runs: list[Run],
@@ -115,8 +156,15 @@ def render_report(
     events: dict[str, Event],
     generated_at: datetime,
     rank_config: RankConfig | None = None,
+    explanation: Explanation | None = None,
+    ai_note: str | None = None,
 ) -> str:
-    """Render a stored comparison as Markdown. Pure: no file or database access."""
+    """Render a stored comparison as Markdown. Pure: no file or database access.
+
+    ``explanation`` adds the AI section; it is left out (with a note under Limitations) if
+    any of its citations does not resolve in this comparison. ``ai_note`` explains why an
+    explanation could not be loaded.
+    """
     details = stored.details
     a_label, b_label = details["a_label"], details["b_label"]
     ranked = stored.divergences
@@ -142,7 +190,7 @@ def render_report(
         f"- **Environments compared:** `{a_label}` ({len(a_runs)} run(s), `{stored.ref_a}`) vs "
         f"`{b_label}` ({len(b_runs)} run(s), `{stored.ref_b}`)"
     )
-    out.append(f"- **Exit codes:** {a_label} {_exit_text(a_run)}, {b_label} {_exit_text(b_run)}")
+    out.append(f"- **Exit codes:** {a_label} {exit_text(a_run)}, {b_label} {exit_text(b_run)}")
     out.append(
         f"- **Divergences:** {len(ranked)} ({severities['CRITICAL']} critical, "
         f"{severities['WARNING']} warning, {severities['INFO']} info)"
@@ -219,6 +267,16 @@ def render_report(
         )
     out.append("")
 
+    if explanation is not None:
+        bad = ungrounded_citations(explanation, ranked)
+        if bad:
+            ai_note = (
+                "AI explanation left out: it cites ids not in this comparison "
+                f"({', '.join(bad[:3])})."
+            )
+        else:
+            out += _ai_section(explanation, ranked)
+
     out += ["## Limitations", ""]
     out += [
         "- Ranking is a heuristic. A high score means the divergence is consistent with the "
@@ -231,6 +289,8 @@ def render_report(
         "sanitized. Full lines are in `events.jsonl` and `raw.strace` of those runs.",
     ]
     out += [f"- {_md(note)}" for note in details.get("notes", [])]
+    if ai_note:
+        out.append(f"- {_md(ai_note)}")
     out += ["", "---", ""]
     out.append(
         f"Generated {generated_at.astimezone(UTC).strftime('%Y-%m-%d %H:%M UTC')} by "
@@ -240,7 +300,8 @@ def render_report(
     return "\n".join(out) + "\n"
 
 
-def _events_of(base_dir: Path, run_id: str) -> list[Event]:
+def run_events(base_dir: Path, run_id: str) -> list[Event]:
+    """Events of a saved run (parsed now if events.jsonl is missing)."""
     path = config.run_dir(base_dir, run_id) / config.EVENTS_FILE
     if path.is_file():
         return read_events(path)
@@ -256,10 +317,18 @@ def write_report(base_dir: Path, comparison_id: str | None, out: Path | None = N
     a_runs = [load_run(base_dir, run_id) for run_id in details["a_run_ids"]]
     b_runs = [load_run(base_dir, run_id) for run_id in details["b_run_ids"]]
     events = {
-        event.id: event for run in (a_runs[0], b_runs[0]) for event in _events_of(base_dir, run.id)
+        event.id: event for run in (a_runs[0], b_runs[0]) for event in run_events(base_dir, run.id)
     }
     rank_config = RankConfig.model_validate(stored.config["rank"])
-    text = render_report(stored, a_runs, b_runs, events, datetime.now(UTC), rank_config)
+    explanation, ai_note = None, None
+    try:
+        explanation = load_explanation(base_dir, comparison_id)
+    except ReproTraceError as error:
+        # A broken explanation file must never block the deterministic report (Rules.md 4).
+        ai_note = f"AI explanation left out: {error.message}"
+    text = render_report(
+        stored, a_runs, b_runs, events, datetime.now(UTC), rank_config, explanation, ai_note
+    )
     target = out if out is not None else config.report_path(base_dir, comparison_id)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8")

@@ -73,8 +73,11 @@ A GitHub runner sets more than 100 environment variables your machine does not h
 (`GITHUB_*`, `RUNNER_*`, `JAVA_HOME`, ...). They are listed, but ranked low: a variable that exists
 only on the failing side rarely causes a failure, and CI platform variables almost never do. The
 same goes for your terminal and desktop session (`DISPLAY`, `XDG_*`, `LS_COLORS`, ...), which CI
-never has. A variable that is missing on the failing side, or has a different value, still ranks
-high; locale variables (`LANG`, `LC_*`) and `VIRTUAL_ENV` are always treated as meaningful.
+never has. A variable that is missing on the failing side, or has a different value, ranks
+high when only a few variables differ that way; when your shell has many that CI lacks
+(`AWS_*`, `EDITOR`, ...), each of them counts less, because any single one is then weak
+evidence. Locale variables (`LANG`, `LC_*`) and `VIRTUAL_ENV` are always treated as
+meaningful.
 
 ## 4. Secrets: what the artifact contains
 

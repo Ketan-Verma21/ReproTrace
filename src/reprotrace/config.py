@@ -9,6 +9,7 @@ META_FILE = "meta.json"
 EVENTS_FILE = "events.jsonl"
 DB_FILE = "reprotrace.db"
 REPORTS_DIR_NAME = "reports"
+EXPLANATIONS_DIR_NAME = "explanations"
 
 DEFAULT_TIMEOUT_S = 300.0
 DEFAULT_RUNS = 1
@@ -38,3 +39,8 @@ def db_path(base: Path) -> Path:
 def report_path(base: Path, comparison_id: str) -> Path:
     """Return the default Markdown report path for a comparison."""
     return data_dir(base) / REPORTS_DIR_NAME / f"{comparison_id}.md"
+
+
+def explanation_path(base: Path, comparison_id: str) -> Path:
+    """Return where the AI explanation of a comparison is stored."""
+    return data_dir(base) / EXPLANATIONS_DIR_NAME / f"{comparison_id}.json"

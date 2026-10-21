@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "run_78821d8cb944",
+  "label": "local",
+  "group_id": "grp_2053b102e131",
+  "command": [
+    "python3",
+    "-c",
+    "import time; time.localtime(); open('settings.toml').read()"
+  ],
+  "exit_code": 0,
+  "timed_out": false,
+  "duration_ms": 64,
+  "started_at": "2026-10-21T18:37:18.724083Z",
+  "git_commit": null,
+  "trace_path": "runs/run_78821d8cb944/raw.strace",
+  "env_redacted": {
+    "AWS_ACCESS_KEY_ID": "<redacted>",
+    "AWS_DEFAULT_REGION": "us-east-1",
+    "AWS_PROFILE": "dev",
+    "AWS_SECRET_ACCESS_KEY": "<redacted>",
+    "DOCKER_BUILDKIT": "1",
+    "EDITOR": "vim",
+    "GIT_EDITOR": "vim",
+    "HISTSIZE": "10000",
+    "HOME": "/root",
+    "LANG": "en_IN",
+    "LC_CTYPE": "C.UTF-8",
+    "MANPAGER": "less",
+    "NODE_ENV": "development",
+    "PAGER": "less",
+    "PATH": "/home/claude/Reprotrace/.venv/bin:/usr/bin:/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "TZ": "UTC"
+  }
+}

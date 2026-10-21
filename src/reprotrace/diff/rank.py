@@ -100,25 +100,57 @@ def _category(
     return default
 
 
-def _env_failure(ev: Evidence, cmp: Comparison, config: RankConfig) -> tuple[float, str | None]:
-    """A variable missing on the failing side, or set differently, is like a failed call."""
+# Full failure credit for at most this many suspicious variables. Two machines set up by
+# different people (a developer's shell vs CI) differ in dozens of variables; each one is
+# then much weaker evidence than a single differing variable, so the credit is shared.
+ENV_FULL_CREDIT_UP_TO = 3
+# A call that failed on the side whose command succeeded rarely explains the failure.
+PASSING_SIDE_FAILURE_VALUE = 0.0
+
+
+def _is_path_value(value: str | None) -> bool:
+    """A filesystem path or a list of paths (/usr/bin, ~/x, a:b/c), not just any text with "/"
+    (TZ=Asia/Kolkata is a name)."""
+    if not value:
+        return False
+    return value.startswith(("/", "~", ".")) or (":" in value and "/" in value)
+
+
+def _env_suspect(ev: Evidence, cmp: Comparison, config: RankConfig) -> str | None:
+    """ "missing" or "different" if this variable could explain the failure, else None."""
     key, side = ev.env_key, cmp.failing_side
     if key is None or side is None or _is_platform_var(key, config) or _is_session_var(key, config):
-        return 0.0, None
+        return None
     own = ev.env_values[0] if side == "a" else ev.env_values[1]
     other = ev.env_values[1] if side == "a" else ev.env_values[0]
     # Path-valued variables (PATH, PYTHONPATH, JAVA_HOME, ...) differ between almost any two
     # machines; their effect shows up as file events instead, which are ranked on their own.
-    if any(v and "/" in v for v in (own, other)):
-        return 0.0, None
+    if _is_path_value(own) or _is_path_value(other):
+        return None
     if own is None and other is not None:
-        return config.one_sided_failure_value, f"{key} is missing where the command failed"
+        return "missing"
     if own is not None and other is not None:
-        return (
-            config.one_sided_failure_value,
-            f"{key} has a different value where the command failed",
-        )
-    return 0.0, None
+        return "different"
+    return None
+
+
+def _env_failure(
+    ev: Evidence, cmp: Comparison, config: RankConfig, suspects: int
+) -> tuple[float, str | None]:
+    """A variable missing on the failing side, or set differently, is like a failed call."""
+    kind = _env_suspect(ev, cmp, config)
+    if kind is None:
+        return 0.0, None
+    key = ev.env_key
+    text = (
+        f"{key} is missing where the command failed"
+        if kind == "missing"
+        else f"{key} has a different value where the command failed"
+    )
+    share = min(1.0, ENV_FULL_CREDIT_UP_TO / max(suspects, 1))
+    if share < 1.0:
+        text += f" (one of {suspects} such variables, so it counts less)"
+    return config.one_sided_failure_value * share, text
 
 
 def _env_values_in_play(cmp: Comparison) -> list[tuple[str, str]]:
@@ -127,23 +159,30 @@ def _env_values_in_play(cmp: Comparison) -> list[tuple[str, str]]:
     for d in cmp.divergences:
         ev = cmp.evidence[d.id]
         if d.kind == "env_diff" and ev.env_key and ev.env_key != "PATH":
-            pairs += [(ev.env_key, v) for v in ev.env_values if v and len(v) >= 4 and "/" not in v]
+            pairs += [
+                (ev.env_key, v)
+                for v in ev.env_values
+                if v and len(v) >= 4 and not _is_path_value(v)
+            ]
     return pairs
 
 
-def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankConfig
-                     ) -> tuple[float, str | None]:  # fmt: skip
+def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankConfig,
+                     env_suspects: int) -> tuple[float, str | None]:  # fmt: skip
     if d.kind == "env_diff":
-        return _env_failure(ev, cmp, config)
+        return _env_failure(ev, cmp, config, env_suspects)
     benign = set(config.benign_errnos)
     a_err = next((e.errno for e in ev.a_events if e.errno and e.errno not in benign), None)
     b_err = next((e.errno for e in ev.b_events if e.errno and e.errno not in benign), None)
     if d.kind == "result_mismatch" and bool(a_err) != bool(b_err):
         failed, ok = ("a", "b") if a_err else ("b", "a")
-        return 1.0, (
+        text = (
             f"failed on {_side_name(cmp, failed)} ({a_err or b_err}) but succeeded on "
             f"{_side_name(cmp, ok)}"
         )
+        if cmp.failing_side is not None and failed != cmp.failing_side:
+            return PASSING_SIDE_FAILURE_VALUE, f"{text}, the side whose command succeeded"
+        return 1.0, text
     one_sided = bool(ev.a_events) != bool(ev.b_events)
     if one_sided and (a_err or b_err):
         side = "a" if ev.a_events else "b"
@@ -154,9 +193,10 @@ def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankC
                 0.0,
                 f"search-path probe: {name} was found at another path on {_side_name(cmp, side)}",
             )
-        return config.one_sided_failure_value, (
-            f"failing call ({a_err or b_err}) seen only on {_side_name(cmp, side)}"
-        )
+        text = f"failing call ({a_err or b_err}) seen only on {_side_name(cmp, side)}"
+        if cmp.failing_side is not None and side != cmp.failing_side:
+            return PASSING_SIDE_FAILURE_VALUE, f"{text}, the side whose command succeeded"
+        return config.one_sided_failure_value, text
     return 0.0, None
 
 
@@ -300,13 +340,18 @@ def rank_divergences(cmp: Comparison, config: RankConfig | None = None) -> list[
     earliest = _earliest(cmp.divergences, cmp, weak_env)
     roots = _program_roots(cmp)
     env_values = _env_values_in_play(cmp)
+    env_suspects = sum(
+        1
+        for d in cmp.divergences
+        if d.kind == "env_diff" and _env_suspect(cmp.evidence[d.id], cmp, config)
+    )
     ranked: list[Divergence] = []
     for d in cmp.divergences:
         ev = cmp.evidence[d.id]
         consequence = _consequence(d, ev, cmp, roots, env_values)
         category, category_reason = categories[d.id]
         signals: dict[SignalName, tuple[float, str | None]] = {
-            "failed_one_side": _failed_one_side(d, ev, cmp, config),
+            "failed_one_side": _failed_one_side(d, ev, cmp, config, env_suspects),
             "category": (category, category_reason),
             "earliest_in_process": earliest[d.id],
             "stability": stability,

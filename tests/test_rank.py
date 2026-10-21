@@ -176,8 +176,11 @@ def test_real_ci_cause_ranks_first(real_ci: list[Divergence]) -> None:
 
 
 def test_real_ci_runner_environment_is_not_in_the_top_ten(real_ci: list[Divergence]) -> None:
+    # TZ and PATH really differ (PATH selects another Python); runner variables must not show.
     for d in real_ci[:10]:
-        assert d.kind != "env_diff" or "TZ" in d.summary, d.summary
+        assert d.kind != "env_diff" or d.summary.split(":")[0].split()[-1] in ("TZ", "PATH"), (
+            d.summary
+        )
     platform = next(d for d in real_ci if "GITHUB_SHA" in d.summary)
     assert severity(platform) == "INFO"
     assert any("CI platform variable" in r for r in platform.reasons)
@@ -261,10 +264,12 @@ def test_failed_exec_search_ranks_first() -> None:
 def test_env_failure_credit() -> None:
     from reprotrace.diff.rank import _env_failure
 
-    def credit(values: tuple[str | None, str | None], key: str = "APP_MODE") -> float:
+    def credit(
+        values: tuple[str | None, str | None], key: str = "APP_MODE", suspects: int = 1
+    ) -> float:
         d = Divergence(id="d1", kind="env_diff", summary="s", a_event_ids=[], b_event_ids=[])
         fake = Comparison("good", "bad", 1, 1, [d], failing_side="b")
-        return _env_failure(Evidence([], [], -1, key, values), fake, RankConfig())[0]
+        return _env_failure(Evidence([], [], -1, key, values), fake, RankConfig(), suspects)[0]
 
     full = RankConfig().one_sided_failure_value
     assert credit(("prod", None)) == full  # missing on the failing side
@@ -273,3 +278,38 @@ def test_env_failure_credit() -> None:
     assert credit(("/usr/bin", "/opt/bin"), key="PATH") == 0.0  # path-valued
     assert credit(("a", "b"), key="HOSTNAME") == 0.0  # machine-specific
     assert credit(("a", "b"), key="GITHUB_SHA") == 0.0  # CI platform
+    assert credit(("prod", None), suspects=3) == full  # a few suspects: full credit each
+    assert credit(("prod", None), suspects=12) == pytest.approx(full * 3 / 12)  # shared
+
+
+def test_desktop_shell_variables_do_not_crowd_the_top() -> None:
+    """Regression (dev machine 2026-10-22): a developer shell vs CI ranked AWS_*, LANG, ...
+    as CRITICAL right below the cause. pair_desktop has 13 such invented variables."""
+    ranked = rank_divergences(compare_sides(side("local", "pair_desktop"), side("ci", "ci_github")))
+    assert ranked[0].summary == "openat <cwd>/settings.toml: OK on local, ENOENT on ci"
+    critical = [d.summary for d in ranked if severity(d) == "CRITICAL"]
+    assert critical == [ranked[0].summary]
+    aws = next(d for d in ranked if "AWS_PROFILE" in d.summary)
+    assert any("such variables, so it counts less" in r for r in aws.reasons)
+    # LANG=en_IN is not installed here: locale-archive fails on local, the passing side.
+    archive = next(d for d in ranked if "locale-archive" in d.summary)
+    assert any("the side whose command succeeded" in r for r in archive.reasons)
+    assert severity(archive) != "CRITICAL"
+
+
+def test_path_values_versus_names_with_a_slash() -> None:
+    from reprotrace.diff.rank import _is_path_value
+
+    for value in ("/usr/bin", "~/.venv/bin:/usr/bin", "./build", "/opt/a:/opt/b", "a/b:c/d"):
+        assert _is_path_value(value), value
+    for value in ("Asia/Kolkata", "America/New_York", "en_IN.UTF-8", "prod", None, ""):
+        assert not _is_path_value(value), value
+
+
+def test_tz_name_counts_and_its_zone_file_follows_from_it() -> None:
+    ranked = rank_divergences(compared("pair_good", "pair_bad"))
+    tz = next(d for d in ranked if d.summary.startswith("Environment variable TZ"))
+    assert any("TZ has a different value where the command failed" in r for r in tz.reasons)
+    zone = next(d for d in ranked if "zoneinfo/Asia/Kolkata" in d.summary)
+    assert any("the value of TZ" in r for r in zone.reasons)
+    assert ranked[0].summary == "openat <cwd>/settings.toml: OK on good, ENOENT on bad"

@@ -4,7 +4,7 @@ import pytest
 
 from conftest import TRACES, fixture_lines
 from reprotrace.models import Event
-from reprotrace.normalize.noise import build_noise_profile, signature_set, stable_events
+from reprotrace.normalize.noise import build_noise_profile, signature_set
 from reprotrace.normalize.rules import normalize_events
 from reprotrace.parse.strace_parser import parse_lines
 
@@ -57,15 +57,6 @@ def test_single_run_marks_nothing_unstable() -> None:
     profile = build_noise_profile([run])
     assert profile.unstable == []
     assert profile.stable_count == len(signature_set(run))
-
-
-def test_stable_events_drops_unstable_and_ignored() -> None:
-    runs = [normalized_run("local_python_missing_file"), normalized_run("local_long_path")]
-    profile = build_noise_profile(runs)
-    kept = stable_events(runs[0], profile)
-    assert kept
-    assert all(e.signature is not None and e.signature not in profile.unstable for e in kept)
-    assert not any(e.target == "/nonexistent/config.toml" for e in kept)
 
 
 def test_empty_input_is_rejected() -> None:

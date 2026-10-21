@@ -24,9 +24,3 @@ def build_noise_profile(runs: Sequence[Sequence[Event]]) -> NoiseProfile:
     seen = set().union(*sets)
     stable = set.intersection(*sets)
     return NoiseProfile(run_ids=run_ids, stable_count=len(stable), unstable=sorted(seen - stable))
-
-
-def stable_events(events: Sequence[Event], profile: NoiseProfile) -> list[Event]:
-    """Return events whose signature is stable in ``profile`` (ignored events dropped)."""
-    unstable = frozenset(profile.unstable)
-    return [e for e in events if e.signature is not None and e.signature not in unstable]
