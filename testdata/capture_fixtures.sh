@@ -9,6 +9,10 @@
 # environment into the raw trace, and these files are committed.
 # Note: tests assert some values (PIDs) from the current captures; regenerating an existing
 # fixture means updating those assertions.
+#
+# Not produced by this script: ci_github_1/2 (.strace + .meta.json) are the two runs of the
+# `capture` job in .github/workflows/ci.yml (GitHub Actions, commit 0722f1f, 2026-10-21),
+# copied unchanged from the `reprotrace-ci-runs` artifact, ordered by started_at.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

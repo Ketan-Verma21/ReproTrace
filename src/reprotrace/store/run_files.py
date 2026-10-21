@@ -84,11 +84,48 @@ def load_group(base_dir: Path, group_id: str) -> list[Run]:
     return sorted(runs, key=lambda run: run.started_at)
 
 
+def _readable_runs(base_dir: Path) -> list[Run]:
+    """Every run whose metadata loads; unreadable folders are skipped with a warning."""
+    runs = []
+    for run_id in all_run_ids(base_dir):
+        try:
+            runs.append(load_run(base_dir, run_id))
+        except (StoreError, SchemaVersionError) as error:
+            log.warning("skipping run folder %s: %s", run_id, error.message)
+    return runs
+
+
+def latest_group_for_label(base_dir: Path, label: str) -> list[Run]:
+    """Runs of the most recent capture group with ``label``, oldest first."""
+    runs = _readable_runs(base_dir)
+    labelled = [run for run in runs if run.label == label]
+    if not labelled:
+        labels = sorted({run.label for run in runs})
+        hint = (
+            f"Use a run id (run_...), a group id (grp_...) or a label. Saved labels: "
+            f"{', '.join(labels)}" if labels else "No runs saved yet: use 'reprotrace capture'."
+        )  # fmt: skip
+        raise StoreError(f"No run, group or label matches: {label}", hint=hint)
+    newest = max(labelled, key=lambda run: run.started_at)
+    return sorted(
+        (run for run in labelled if run.group_id == newest.group_id),
+        key=lambda run: run.started_at,
+    )
+
+
 def resolve_runs(base_dir: Path, ref: str) -> list[Run]:
-    """Return the runs named by ``ref``: a group id (``grp_...``) or a single run id."""
+    """Return the runs named by ``ref``.
+
+    ``ref`` is a group id (``grp_...``), a run id (``run_...``), or a label such as ``ci``,
+    which means the most recent capture group with that label.
+    """
     if ref.startswith("grp_"):
         return load_group(base_dir, ref)
-    return [load_run(base_dir, ref)]
+    if ref.startswith("run_"):
+        return [load_run(base_dir, ref)]
+    if not _RUN_ID.match(ref):
+        raise StoreError(f"Invalid run, group or label: {ref}")
+    return latest_group_for_label(base_dir, ref)
 
 
 def read_events(path: Path) -> list[Event]:

@@ -17,7 +17,13 @@ from reprotrace.diff.rank import severity
 from reprotrace.models import Divergence, Event, RankConfig, Run
 from reprotrace.parse.run import parse_run
 from reprotrace.parse.syscalls import execve_env
-from reprotrace.store.db import StoredComparison, connect, load_comparison, set_report_path
+from reprotrace.store.db import (
+    StoredComparison,
+    connect,
+    latest_comparison_id,
+    load_comparison,
+    set_report_path,
+)
 from reprotrace.store.run_files import load_run, read_events
 
 TOP_DETAILED = 10
@@ -241,10 +247,11 @@ def _events_of(base_dir: Path, run_id: str) -> list[Event]:
     return parse_run(base_dir, run_id).events
 
 
-def write_report(base_dir: Path, comparison_id: str, out: Path | None = None) -> Path:
-    """Write the Markdown report of a saved comparison and return its path."""
+def write_report(base_dir: Path, comparison_id: str | None, out: Path | None = None) -> Path:
+    """Write the Markdown report of a saved comparison (default: the latest) and return its path."""
     with connect(base_dir) as conn:
-        stored = load_comparison(conn, comparison_id)
+        stored = load_comparison(conn, comparison_id or latest_comparison_id(conn))
+    comparison_id = stored.id
     details = stored.details
     a_runs = [load_run(base_dir, run_id) for run_id in details["a_run_ids"]]
     b_runs = [load_run(base_dir, run_id) for run_id in details["b_run_ids"]]

@@ -146,8 +146,12 @@ def list_saved_runs(ctx: typer.Context) -> None:
 @app.command()
 def diff(
     ctx: typer.Context,
-    a: Annotated[str, typer.Argument(help="Run id or group id (grp_...) of the first side.")],
-    b: Annotated[str, typer.Argument(help="Run id or group id (grp_...) of the second side.")],
+    a: Annotated[
+        str, typer.Argument(help="First side: label (newest group), group id grp_..., or run id.")
+    ],
+    b: Annotated[
+        str, typer.Argument(help="Second side: label (newest group), group id grp_..., or run id.")
+    ],
     show_all: Annotated[bool, typer.Option("--all", help="Show every divergence.")] = False,
 ) -> None:
     """Compare two runs or capture groups and rank where their behavior diverges."""
@@ -164,7 +168,7 @@ def diff(
     lines += [
         Text(),
         Text.assemble("Saved as ", styled(comparison_id, "accent"), ". Write a report with:"),
-        Text(f"  reprotrace report {comparison_id}"),
+        Text("  reprotrace report"),
     ]
     _out(ctx, lines)
 
@@ -173,8 +177,9 @@ def diff(
 def report(
     ctx: typer.Context,
     comparison_id: Annotated[
-        str, typer.Argument(help="Comparison id printed by 'reprotrace diff'.")
-    ],
+        str | None,
+        typer.Argument(help="Comparison id printed by 'reprotrace diff' (default: the latest)."),
+    ] = None,
     out: Annotated[
         Path | None, typer.Option("--out", help="Write the report here instead.")
     ] = None,

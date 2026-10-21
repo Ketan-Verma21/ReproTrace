@@ -209,6 +209,16 @@ def save_comparison(
     )  # fmt: skip
 
 
+def latest_comparison_id(conn: sqlite3.Connection) -> str:
+    """Id of the most recently created comparison."""
+    row = conn.execute("SELECT id FROM comparisons ORDER BY created_at DESC LIMIT 1").fetchone()
+    if row is None:
+        raise StoreError(
+            "No comparisons saved yet.", hint="Compare two captures first with 'reprotrace diff'."
+        )
+    return row["id"]
+
+
 def load_comparison(conn: sqlite3.Connection, comparison_id: str) -> StoredComparison:
     """Read a comparison and its divergences (highest score first)."""
     row = conn.execute("SELECT * FROM comparisons WHERE id = ?", (comparison_id,)).fetchone()

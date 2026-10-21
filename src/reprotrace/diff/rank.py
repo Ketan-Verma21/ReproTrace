@@ -11,14 +11,20 @@ Signals:
   often consequences of earlier ones.
 - stability: confirmed by repeated runs on both sides (noise already filtered).
 - proximity_to_failing_exit: how close the evidence is to the failing side's exit.
-- not_failure_consequence: 0 for the exit-status difference itself (the symptom being
-  explained) and for events seen on one side only after that side's process stopped
-  matching the other (error handling such as a traceback on the failing side, or the
-  normal work the passing side went on to do); else 1. Only applies when exactly one side
-  failed.
+- not_failure_consequence: 0 for divergences that follow from another one: the exit-status
+  difference itself (the symptom being explained); events seen on one side only after that
+  side's process stopped matching the other (error handling such as a traceback, or the
+  normal work the passing side went on to do); and one-sided events inside the install
+  folder of a program that differs between the sides (a different Python lays out its
+  files differently). Else 1.
+
+Search-path probing is not counted as a failure: a failed lookup of a file name that the
+same side found at another path (the dynamic loader and Python's import system try many
+locations) gets no ``failed_one_side`` credit.
 """
 
 from collections import defaultdict
+from pathlib import PurePosixPath
 
 from reprotrace.diff.compare import Comparison, Evidence
 from reprotrace.models import Divergence, Event, RankConfig, SignalName
@@ -41,6 +47,57 @@ def category_value(kind: str, config: RankConfig) -> float:
     )
 
 
+def _is_platform_var(key: str, config: RankConfig) -> bool:
+    return key in config.env_platform_names or any(
+        key.startswith(prefix) for prefix in config.env_platform_prefixes
+    )
+
+
+def _is_session_var(key: str, config: RankConfig) -> bool:
+    return key in config.env_session_names or any(
+        key.startswith(prefix) for prefix in config.env_session_prefixes
+    )
+
+
+def _category(
+    d: Divergence, ev: Evidence, cmp: Comparison, config: RankConfig
+) -> tuple[float, str]:
+    """Value and reason of the ``category`` signal; environment differences are graded."""
+    value = category_value(d.kind, config)
+    default = (value, f"{d.kind} (category weight {value:.1f})")
+    if d.kind != "env_diff" or ev.env_key is None:
+        return default
+    key = ev.env_key
+    if _is_platform_var(key, config):
+        return (
+            config.env_platform_value,
+            f"{key} is a CI platform variable (weight {config.env_platform_value:.1f})",
+        )
+    if _is_session_var(key, config):
+        return (
+            config.env_platform_value,
+            f"{key} is a terminal or desktop session variable "
+            f"(weight {config.env_platform_value:.1f})",
+        )
+    side = cmp.failing_side
+    if side is not None:
+        own = ev.env_values[0] if side == "a" else ev.env_values[1]
+        other = ev.env_values[1] if side == "a" else ev.env_values[0]
+        if own is not None and other is None:
+            weight = config.env_only_on_failing_side_value
+            return weight, (
+                f"{key} is set only on the failing side {_side_name(cmp, side)}; extra variables "
+                f"rarely cause failures (weight {weight:.1f})"
+            )
+        if own is None and other is not None:
+            return (
+                value,
+                f"{key} is missing on the failing side {_side_name(cmp, side)} "
+                f"(weight {value:.1f})",
+            )
+    return default
+
+
 def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankConfig
                      ) -> tuple[float, str | None]:  # fmt: skip
     benign = set(config.benign_errnos)
@@ -55,6 +112,13 @@ def _failed_one_side(d: Divergence, ev: Evidence, cmp: Comparison, config: RankC
     one_sided = bool(ev.a_events) != bool(ev.b_events)
     if one_sided and (a_err or b_err):
         side = "a" if ev.a_events else "b"
+        target = (ev.a_events or ev.b_events)[0].target
+        name = PurePosixPath(target).name if target else ""
+        if name and name in cmp.found_names.get(side, set()):
+            return (
+                0.0,
+                f"search-path probe: {name} was found at another path on {_side_name(cmp, side)}",
+            )
         return config.one_sided_failure_value, (
             f"failing call ({a_err or b_err}) seen only on {_side_name(cmp, side)}"
         )
@@ -83,8 +147,42 @@ def _proximity(ev: Evidence, cmp: Comparison) -> tuple[float, str | None]:
     )
 
 
-def _consequence(d: Divergence, ev: Evidence, cmp: Comparison) -> str | None:
-    """Why ``d`` looks like a consequence of the failure rather than its cause, or None."""
+def _install_root(program: str) -> str | None:
+    """``/opt/py/3.11/x64`` for ``/opt/py/3.11/x64/bin/python3``; None if too broad."""
+    path = PurePosixPath(program).parent
+    if path.name == "bin":
+        path = path.parent
+    # /usr or / would claim half the system; only specific install folders count.
+    return str(path) if len(path.parts) >= 4 else None
+
+
+def _program_roots(cmp: Comparison) -> dict[tuple[int, str], str]:
+    """Install folders of programs that differ between the sides, per process pair and side."""
+    roots: dict[tuple[int, str], str] = {}
+    for d in cmp.divergences:
+        if d.kind != "executable_mismatch":
+            continue
+        ev = cmp.evidence[d.id]
+        for side, events in (("a", ev.a_events), ("b", ev.b_events)):
+            root = _install_root(events[0].target) if events and events[0].target else None
+            if root:
+                roots[(ev.pair_index, side)] = root
+    return roots
+
+
+def _consequence(
+    d: Divergence, ev: Evidence, cmp: Comparison, roots: dict[tuple[int, str], str]
+) -> str | None:
+    """Why ``d`` looks like a consequence of another divergence rather than a cause, or None."""
+    if bool(ev.a_events) != bool(ev.b_events) and 0 <= ev.pair_index < len(cmp.process_pairs):
+        side = "a" if ev.a_events else "b"
+        root = roots.get((ev.pair_index, side))
+        target = (ev.a_events or ev.b_events)[0].target or ""
+        if root and (target == root or target.startswith(root + "/")):
+            return (
+                f"inside {root}, the install folder of the different program on "
+                f"{_side_name(cmp, side)}: follows from that difference"
+            )
     if cmp.failing_side is None:
         return None
     if d.kind == "exit_status_mismatch":
@@ -115,13 +213,21 @@ def _stability(cmp: Comparison) -> tuple[float, str]:
     return value, f"single run on {' and '.join(single)}, so not confirmed against noise"
 
 
-def _earliest(divergences: list[Divergence], cmp: Comparison) -> dict[str, tuple[float, str]]:
+def _earliest(
+    divergences: list[Divergence], cmp: Comparison, weak_env: set[str]
+) -> dict[str, tuple[float, str]]:
     by_process: dict[int, list[Divergence]] = defaultdict(list)
+    result: dict[str, tuple[float, str]] = {}
     for d in divergences:
         pair = cmp.evidence[d.id].pair_index
-        # Environment differences are fixed at exec time, before anything in the root ran.
-        by_process[0 if pair < 0 else pair].append(d)
-    result: dict[str, tuple[float, str]] = {}
+        if pair < 0:
+            # Environment differences exist before the program runs and must not push the
+            # process's own divergences later. Weak ones (extra or CI platform variables)
+            # do not get full "first" credit.
+            value = 0.5 if d.id in weak_env else 1.0
+            result[d.id] = (value, "set before the program started")
+        else:
+            by_process[pair].append(d)
     for pair, items in by_process.items():
         name = cmp.process_pairs[pair][0] if pair < len(cmp.process_pairs) else "unmatched"
         for index, d in enumerate(items):
@@ -141,15 +247,22 @@ def rank_divergences(cmp: Comparison, config: RankConfig | None = None) -> list[
     config = config or RankConfig()
     total_weight = sum(config.weights.values()) or 1.0
     stability = _stability(cmp)
-    earliest = _earliest(cmp.divergences, cmp)
+    categories = {d.id: _category(d, cmp.evidence[d.id], cmp, config) for d in cmp.divergences}
+    weak_env = {
+        d.id
+        for d in cmp.divergences
+        if d.kind == "env_diff" and categories[d.id][0] < category_value("env_diff", config)
+    }
+    earliest = _earliest(cmp.divergences, cmp, weak_env)
+    roots = _program_roots(cmp)
     ranked: list[Divergence] = []
     for d in cmp.divergences:
         ev = cmp.evidence[d.id]
-        consequence = _consequence(d, ev, cmp)
-        category = category_value(d.kind, config)
+        consequence = _consequence(d, ev, cmp, roots)
+        category, category_reason = categories[d.id]
         signals: dict[SignalName, tuple[float, str | None]] = {
             "failed_one_side": _failed_one_side(d, ev, cmp, config),
-            "category": (category, f"{d.kind} (category weight {category:.1f})"),
+            "category": (category, category_reason),
             "earliest_in_process": earliest[d.id],
             "stability": stability,
             "proximity_to_failing_exit": _proximity(ev, cmp),

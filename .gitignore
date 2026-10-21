@@ -2,6 +2,9 @@
 # Raw traces contain the full environment of the traced command (strace -v), so they must
 # never be committed. Real test fixtures live in testdata/traces/ and ARE committed.
 .reprotrace/
+# Downloaded CI artifacts (docs/CI.md); they contain the CI runner's environment.
+/ci-run/
+/ci-runs/
 
 # Planning and progress documents (kept local by choice)
 /Design.md

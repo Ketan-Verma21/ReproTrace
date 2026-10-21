@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from conftest import install_fixture_run
 from reprotrace import __version__
 from reprotrace.capture import runner as capture_runner
 from reprotrace.cli import app
@@ -128,7 +129,16 @@ def test_full_flow_capture_diff_report(tmp_path: Path, monkeypatch: pytest.Monke
     compared = runner.invoke(app, ["--no-color", "diff", good, bad])
     assert compared.exit_code == 0, compared.output
     cid = next(w.rstrip(".") for w in compared.output.split() if w.startswith("cmp_"))
-    assert f"reprotrace report {cid}" in compared.output
+    assert "reprotrace report" in compared.output
+
+    by_label = runner.invoke(app, ["--no-color", "diff", "good", "bad"])
+    assert by_label.exit_code == 0, by_label.output
+    assert "good (2 run(s)) vs bad (2 run(s))" in by_label.output
+
+    latest = runner.invoke(app, ["report"])
+    assert latest.exit_code == 0, latest.output
+    latest_cid = next(w.rstrip(".") for w in by_label.output.split() if w.startswith("cmp_"))
+    assert f"{latest_cid}.md" in latest.output
 
     written = runner.invoke(app, ["report", cid])
     assert written.exit_code == 0, written.output
@@ -163,3 +173,21 @@ def test_runs_reports_broken_folders(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert result.exit_code == 0
     assert "Skipped run folder run_broken000000: Corrupt run metadata" in result.output
     assert "No saved runs yet." in result.output
+
+
+def test_diff_with_unknown_label_lists_saved_labels(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    install_fixture_run(tmp_path, "pair_good_1")
+    result = runner.invoke(app, ["diff", "GRP_LOCAL", "good"])
+    assert result.exit_code == 1
+    assert "Error: No run, group or label matches: GRP_LOCAL" in result.output
+    assert "Saved labels: good" in result.output
+
+
+def test_report_without_comparisons(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["report"])
+    assert result.exit_code == 1
+    assert "Error: No comparisons saved yet." in result.output

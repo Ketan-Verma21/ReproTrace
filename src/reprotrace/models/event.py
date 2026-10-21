@@ -225,5 +225,31 @@ class RankConfig(BaseModel):
         "ENOTTY", "EAGAIN", "EINPROGRESS", "EINTR", "ECHILD", "ERESTARTSYS",
         "ERESTARTNOHAND", "ERESTARTNOINTR", "ERESTART_RESTARTBLOCK",
     ]  # fmt: skip
+    # Environment differences: a variable missing on the failing side or set to different
+    # values is strong evidence (category env_diff). A variable set only on the failing side
+    # rarely causes a failure, and CI platform bookkeeping variables almost never do.
+    env_only_on_failing_side_value: float = 0.3
+    env_platform_value: float = 0.1
+    env_platform_prefixes: list[str] = [
+        "GITHUB_", "RUNNER_", "ACTIONS_", "GITLAB_", "CI_", "BUILDKITE_", "CIRCLE",
+        "TRAVIS_", "JENKINS_", "BUILD_", "AGENT_",
+    ]  # fmt: skip
+    env_platform_names: list[str] = [
+        "CI", "ImageOS", "ImageVersion", "INVOCATION_ID", "JOURNAL_STREAM",
+        "SYSTEMD_EXEC_PID", "ENABLE_RUNNER_TRACING",
+    ]  # fmt: skip
+    # Interactive terminal/desktop session variables: present on a developer machine, absent
+    # in CI, and practically never the cause. Locale (LANG, LC_*), VIRTUAL_ENV and the like
+    # are deliberately not listed.
+    env_session_prefixes: list[str] = [
+        "XDG_", "GNOME_", "KDE_", "DBUS_", "GTK_", "QT_", "VTE_", "TERM_", "SSH_",
+        "WAYLAND_", "P9K_", "_P9K_", "POWERLEVEL9K_", "GPG_", "VSCODE_", "TMUX",
+    ]  # fmt: skip
+    env_session_names: list[str] = [
+        "COLORTERM", "DESKTOP_SESSION", "DISPLAY", "GDMSESSION", "LESS", "LSCOLORS",
+        "LS_COLORS", "PAGER", "PS1", "SESSION_MANAGER", "TERM", "XAUTHORITY", "XMODIFIERS",
+        "ZSH", "EDITOR", "VISUAL", "HISTFILE", "HISTSIZE", "MAIL", "MOTD_SHOWN",
+        "USERNAME", "WINDOWID", "SHELL",
+    ]  # fmt: skip
     critical_threshold: float = 0.7
     warning_threshold: float = 0.5

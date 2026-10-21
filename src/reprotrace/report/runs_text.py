@@ -62,5 +62,10 @@ def render_runs(rows: list[RunRow], skipped: list[tuple[str, str]] | None = None
                     "    ", styled(row.id, "muted"), "  ", _exit(row), f"  {row.duration_ms} ms"
                 )
             )
-    lines += [Text(), styled("Compare two groups with: reprotrace diff GRP_A GRP_B", "muted")]
+    lines += [
+        Text(),
+        styled(
+            "Compare the newest groups of two labels with, e.g.: reprotrace diff local ci", "muted"
+        ),
+    ]
     return lines

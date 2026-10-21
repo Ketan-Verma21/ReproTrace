@@ -50,23 +50,31 @@ was only partly copied is listed as skipped, with the reason, instead of breakin
 
 ## 3. Capture locally and compare
 
-Run the same command on your machine, ideally twice so run-to-run noise can be filtered:
+Run the same command on your machine, ideally twice so run-to-run noise can be filtered. For the
+example command, create the file it reads first, so the local side passes while CI fails:
 
 ```text
+printf 'debug = false\n' > settings.toml
 reprotrace capture --label local --runs 2 -- python3 -c "import time; time.localtime(); open('settings.toml').read()"
-reprotrace runs
-reprotrace diff GRP_LOCAL GRP_CI
-reprotrace report CMP_ID
+reprotrace diff local ci
+reprotrace report
 ```
 
-`GRP_LOCAL` and `GRP_CI` are the `grp_...` ids that `reprotrace runs` prints next to the `local`
-and `ci` labels. `CMP_ID` is the `cmp_...` id printed at the end of `diff`. The report is written to
-`.reprotrace/reports/CMP_ID.md`.
+`diff` accepts labels: `local` and `ci` mean the most recent capture group with that label. You can
+also pass a group id (`grp_...`) or a run id (`run_...`) from `reprotrace runs`. `report` without an
+argument writes the report of the latest comparison to `.reprotrace/reports/`.
 
 Paths that only differ by machine are normalized before comparing: the home folder
 (`/home/runner` versus `/home/you`) becomes `~`, and the working directory becomes `<cwd>`.
 Differences that remain, such as a different Python installation path, are real differences
 between the environments and are listed and ranked.
+
+A GitHub runner sets more than 100 environment variables your machine does not have
+(`GITHUB_*`, `RUNNER_*`, `JAVA_HOME`, ...). They are listed, but ranked low: a variable that exists
+only on the failing side rarely causes a failure, and CI platform variables almost never do. The
+same goes for your terminal and desktop session (`DISPLAY`, `XDG_*`, `LS_COLORS`, ...), which CI
+never has. A variable that is missing on the failing side, or has a different value, still ranks
+high; locale variables (`LANG`, `LC_*`) and `VIRTUAL_ENV` are always treated as meaningful.
 
 ## 4. Secrets: what the artifact contains
 

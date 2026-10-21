@@ -11,8 +11,8 @@ implemented so far:
 reprotrace capture --label local --runs 3 -- pytest tests/test_api.py
 reprotrace show RUN_ID       # failed file opens, programs run, connections
 reprotrace runs                 # saved runs, grouped by capture group
-reprotrace diff GRP_A GRP_B     # ranked differences; saves a comparison (cmp_...)
-reprotrace report CMP_ID        # Markdown report in .reprotrace/reports/
+reprotrace diff local ci        # ranked differences between the newest 'local' and 'ci' groups
+reprotrace report               # Markdown report of the latest comparison
 ```
 
 Add `--no-color` (or set `NO_COLOR`) for plain output.

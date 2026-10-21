@@ -1,7 +1,7 @@
 """Compare two environments, each given as one or more parsed runs of the same command."""
 
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from reprotrace.capture.redact import REDACTED, is_secret_key, looks_like_token, redact_value
 from reprotrace.diff.align import align_events
@@ -54,6 +54,8 @@ class Evidence:
     a_events: list[Event]
     b_events: list[Event]
     pair_index: int  # index into the matched process pairs; -1 = environment, >= pairs = process
+    env_key: str | None = None
+    env_values: tuple[str | None, str | None] = (None, None)  # normalized values on a, b
 
 
 @dataclass
@@ -82,6 +84,9 @@ class Comparison:
     exit_seq: dict[str, int] = field(default_factory=dict)
     last_matched_seq: dict[tuple[int, str], int] = field(default_factory=dict)
     env_rows: list[tuple[str, str, str]] = field(default_factory=list)
+    # Basenames of files each side opened or stat'ed successfully (first run), used to
+    # recognise search-path probing: a failed lookup of a name that was found elsewhere.
+    found_names: dict[str, set[str]] = field(default_factory=dict)
 
 
 def _root_env_event(events: list[Event]) -> Event | None:
@@ -152,7 +157,9 @@ def _env_findings(
             summary = (
                 f"Environment variable {key}: {a_value} on {labels.a}, {b_value} on {labels.b}"
             )
-        findings.append(Finding("env_diff", summary, (-1, 0, len(findings)), [a_event], [b_event]))
+        findings.append(
+            Finding("env_diff", summary, (-1, 0, len(findings)), [a_event], [b_event], env_key=key)
+        )
     return findings
 
 
@@ -189,6 +196,14 @@ def _process_findings(
         position = (start + offset, 0 if side == "a" else 1, first[0].seq if first else 0)
         findings.append(Finding(f"process_only_in_{side}", summary, position, a_events, b_events))
     return findings
+
+
+def _found_names(events: list[Event]) -> set[str]:
+    return {
+        PurePosixPath(e.target).name
+        for e in events
+        if e.kind == "file" and e.target and e.errno is None and e.result is not None
+    }
 
 
 def _root_failed(tree: dict[str, ProcessNode]) -> bool:
@@ -255,7 +270,13 @@ def compare_sides(
             b_event_ids=first_ids(f.b_events),
         )
         divergences.append(divergence)
-        evidence[divergence.id] = Evidence(f.a_events, f.b_events, f.position[0])
+        evidence[divergence.id] = Evidence(
+            f.a_events,
+            f.b_events,
+            f.position[0],
+            f.env_key,
+            (pa.env.get(f.env_key), pb.env.get(f.env_key)) if f.env_key else (None, None),
+        )
     a_failed, b_failed = _root_failed(a_tree), _root_failed(b_tree)
     comparison = Comparison(
         a_label=a.label,
@@ -277,6 +298,7 @@ def compare_sides(
         exit_seq={"a": _root_exit_seq(a_tree), "b": _root_exit_seq(b_tree)},
         last_matched_seq=last_matched,
         env_rows=env_rows,
+        found_names={"a": _found_names(pa.events), "b": _found_names(pb.events)},
     )
     for side in (pa, pb):
         if side.run_count == 1:

@@ -46,9 +46,27 @@ def test_render_mentions_counts_and_limits() -> None:
     text = plain(render_run_summary(summary, limit=1))
     assert "0 unparsed" in text
     assert f"Files that failed to open ({len(summary.failed_opens)})" in text
-    assert "more hidden (use --all)" in text
+    assert "earlier ones hidden (use --all)" in text
+    # The newest failure (the one just before the exit) is the one kept.
+    assert "/nonexistent/config.toml" in text
     full = plain(render_run_summary(summary, limit=None))
-    assert "/nonexistent/config.toml" in full
+    assert "earlier ones hidden" not in full
+
+
+def test_real_ci_failure_is_not_hidden_by_loader_probes() -> None:
+    """Regression: on GitHub's runner the loader probes filled the first 10 slots."""
+    summary = summary_of("ci_github_1")
+    targets = [item.target for item in summary.failed_opens]
+    assert targets[-1].endswith("/settings.toml")
+    probes = [item.target for item in summary.probes]
+    assert any("glibc-hwcaps" in path and path.endswith("libpython3.11.so.1.0") for path in probes)
+    assert not any("glibc-hwcaps" in path for path in targets)
+    text = plain(render_run_summary(summary))
+    assert "/home/runner/work/ReproTrace/ReproTrace/settings.toml  ENOENT" in text
+    assert f"+ {len(probes)} search-path probe(s)" in text
+    full = plain(render_run_summary(summary, limit=None))
+    assert "Search-path probes (the same file name was found elsewhere):" in full
+    assert "libpython3.11.so.1.0" in full
 
 
 def test_render_timeout_and_signal_outcomes() -> None:

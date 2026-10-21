@@ -31,6 +31,7 @@ class Finding:
     position: tuple[int, int, int]
     a_events: list[Event] = field(default_factory=list)
     b_events: list[Event] = field(default_factory=list)
+    env_key: str | None = None  # set for env_diff findings
 
 
 @dataclass(frozen=True)
