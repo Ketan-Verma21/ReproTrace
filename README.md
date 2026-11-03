@@ -40,7 +40,10 @@ pipx install reprotrace
 reprotrace --help
 ```
 
-pipx keeps the tool in its own environment. `python3 -m pip install reprotrace` inside a
+pipx keeps the tool in its own environment. If your system Python is older than 3.11 (Ubuntu
+22.04 ships 3.10), install a newer one (for example `python3.11`) and point pipx at it:
+`pipx install --python python3.11 reprotrace`. Run `pipx ensurepath` once if the
+`reprotrace` command is not found afterwards. `python3 -m pip install reprotrace` inside a
 virtual environment works too.
 
 ## 60-second demo
