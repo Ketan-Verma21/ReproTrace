@@ -1,3 +1,3 @@
 """ReproTrace: explain why a command behaves differently on two machines."""
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.1 (first release on PyPI)
+
+- Install with `pipx install reprotrace`. Releases are published from GitHub Actions with
+  Trusted Publishing (`docs/RELEASING.md`).
+- `report --html` writes the report as one self-contained HTML page with the same content as
+  the Markdown report (light and dark mode, no scripts or external files).
+- Experimental `explain`: brief automatic retries when Gemini is overloaded or rate-limited.
+  Checked against the live API: a valid, correctly grounded answer on a real local-vs-CI
+  comparison.
+- Evaluation: `--explain-pause` between AI calls, and API errors are reported separately from
+  rejected answers.
+
 ## v0.1.0 (first release)
 
 ReproTrace compares `strace` recordings of the same command in two environments and ranks
@@ -14,9 +26,7 @@ the differences by how likely they are to explain a failure.
   recordings process by process, and ranks the divergences with a reason for every score.
   Comparisons are saved in SQLite.
 - `report`: Markdown report with the evidence (sanitized trace excerpts), environment
-  differences with secrets redacted, reproduction steps and limitations. `report --html`
-  writes the same content as one self-contained HTML page (light and dark mode, no external
-  files).
+  differences with secrets redacted, reproduction steps and limitations.
 - CI: a GitHub Actions example that captures the CI side and uploads it as an artifact, and
   a guide for comparing it with a local capture (`docs/CI.md`).
 - Evaluation: eight Docker scenarios with planted causes and one command to measure where the

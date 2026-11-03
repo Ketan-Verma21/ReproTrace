@@ -159,9 +159,10 @@ Scenarios are written by the author of ReproTrace, so these numbers describe the
 `reprotrace explain` can send the top-ranked divergences (summaries, reasons, event ids, short
 redacted excerpts; never raw traces or the environment) to Google Gemini and add the
 returned hypotheses to the report, labeled as AI-generated. Answers that cite evidence not in
-the comparison are rejected. It needs `GEMINI_API_KEY`, is tested only against a simulated
-provider so far, and is not needed for anything else. Google's free tier may use prompts to
-improve its products.
+the comparison are rejected. It needs `GEMINI_API_KEY` and is not needed for anything else.
+On a real local-vs-CI comparison it gave a valid answer that named the actual cause; it has
+not been evaluated systematically yet, and the free tier is often overloaded or
+rate-limited. Google's free tier may use prompts to improve its products.
 
 ## Development
 
