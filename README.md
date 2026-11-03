@@ -13,6 +13,8 @@ environment, network calls) using `strace`, compares the two recordings, and ran
 differences by how likely they are to explain the failure. Every finding points to the exact
 system calls behind it.
 
+![Demo: capture a working and a failing run, diff them, the missing file ranks first](https://raw.githubusercontent.com/Ketan-Verma21/ReproTrace/main/docs/demo.gif)
+
 ## How it works
 
 1. **Capture** the same command in each environment, ideally two or more times, with

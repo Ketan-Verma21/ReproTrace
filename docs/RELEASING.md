@@ -45,12 +45,12 @@ TestPyPI accepts each version once; rerunning the trial skips files that already
    section to `CHANGELOG.md`.
 2. `pytest && ruff check .`, commit and push; wait for the `ci` workflow to pass.
 3. Tag and create the GitHub release (the tag must be `v` plus the version, or the workflow
-   stops before uploading; the example is for 0.1.1):
+   stops before uploading; the example is for 0.1.2):
 
    ```text
-   git tag -a v0.1.1 -m "ReproTrace v0.1.1"
-   git push origin v0.1.1
-   gh release create v0.1.1 --title "ReproTrace v0.1.1" --notes-file CHANGELOG.md
+   git tag -a v0.1.2 -m "ReproTrace v0.1.2"
+   git push origin v0.1.2
+   gh release create v0.1.2 --title "ReproTrace v0.1.2" --notes-file CHANGELOG.md
    ```
 
 4. Publishing the release starts `release.yml`; approve the `pypi` deployment when GitHub

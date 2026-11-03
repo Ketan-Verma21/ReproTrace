@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.2
+
+- README: a demo GIF of a real run (capture a working and a failing run, diff, report).
+- README: install note for systems whose Python is older than 3.11 (`pipx install --python
+  python3.11 reprotrace`).
+
 ## v0.1.1 (first release on PyPI)
 
 - Install with `pipx install reprotrace`. Releases are published from GitHub Actions with
