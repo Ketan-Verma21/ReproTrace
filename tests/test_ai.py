@@ -280,9 +280,11 @@ def test_gemini_http_errors_have_hints_and_no_key() -> None:
         body = io.BytesIO(json.dumps({"error": {"message": "Quota exceeded"}}).encode())
         raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {}, body)
 
+    waits: list[float] = []
     with pytest.raises(AIError) as caught:
-        GeminiProvider("topsecret", opener=opener).generate("s", "p", {})
-    assert "HTTP 429: Quota exceeded" in caught.value.message
+        GeminiProvider("topsecret", opener=opener, sleep=waits.append).generate("s", "p", {})
+    assert "HTTP 429: Quota exceeded (after 3 attempts)" in caught.value.message
+    assert waits == [5.0, 15.0]
     assert "quota" in caught.value.hint.lower()
     assert "topsecret" not in caught.value.message
 
@@ -291,6 +293,34 @@ def test_gemini_http_errors_have_hints_and_no_key() -> None:
 
     with pytest.raises(AIError, match="Could not reach"):
         GeminiProvider("k", opener=offline).generate("s", "p", {})
+
+
+def test_gemini_retries_overload_then_succeeds() -> None:
+    calls: list[int] = []
+
+    def opener(request, timeout):
+        calls.append(1)
+        if len(calls) < 3:
+            body = io.BytesIO(json.dumps({"error": {"message": "high demand"}}).encode())
+            raise urllib.error.HTTPError(request.full_url, 503, "Unavailable", {}, body)
+        return FakeResponse(gemini_reply('{"ok": true}'))
+
+    waits: list[float] = []
+    provider = GeminiProvider("k", opener=opener, sleep=waits.append)
+    assert provider.generate("s", "p", {}) == '{"ok": true}'
+    assert len(calls) == 3 and waits == [5.0, 15.0]
+
+
+def test_gemini_does_not_retry_client_errors() -> None:
+    calls: list[int] = []
+
+    def opener(request, timeout):
+        calls.append(1)
+        raise urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b"{}"))
+
+    with pytest.raises(AIError, match="HTTP 404") as caught:
+        GeminiProvider("k", opener=opener, sleep=lambda s: None).generate("s", "p", {})
+    assert len(calls) == 1 and "attempts" not in caught.value.message
 
 
 def test_gemini_from_env(monkeypatch: pytest.MonkeyPatch) -> None:

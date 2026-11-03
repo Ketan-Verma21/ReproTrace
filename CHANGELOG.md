@@ -14,7 +14,9 @@ the differences by how likely they are to explain a failure.
   recordings process by process, and ranks the divergences with a reason for every score.
   Comparisons are saved in SQLite.
 - `report`: Markdown report with the evidence (sanitized trace excerpts), environment
-  differences with secrets redacted, reproduction steps and limitations.
+  differences with secrets redacted, reproduction steps and limitations. `report --html`
+  writes the same content as one self-contained HTML page (light and dark mode, no external
+  files).
 - CI: a GitHub Actions example that captures the CI side and uploads it as an artifact, and
   a guide for comparing it with a local capture (`docs/CI.md`).
 - Evaluation: eight Docker scenarios with planted causes and one command to measure where the

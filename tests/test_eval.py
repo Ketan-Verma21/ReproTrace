@@ -165,8 +165,18 @@ def test_explain_project_grounding_and_table(run_eval, tmp_path: Path) -> None:
             run_eval.ScenarioResult(name="locale", ai=rejected, **base)]  # fmt: skip
     table = run_eval.results_table(rows, 2, "2026-01-01")
     assert "| timezone | yes | yes | yes | medium |" in table
-    assert "| locale | no: " in table
-    assert "**AI totals:** valid 1/2, first hypothesis cites the planted cause 1/2." in table
+    assert "| locale | rejected: " in table
+    assert (
+        "**AI totals:** answered 2/2; of those, valid 1/2, first hypothesis cites the planted "
+        "cause 1/2." in table
+    )
+    assert "model `fake-1`" in table
+
+    no_answer = {"answered": False, "valid": False, "error": "Gemini API returned HTTP 503: busy"}
+    rows.append(run_eval.ScenarioResult(name="permission", ai=no_answer, **base))
+    table = run_eval.results_table(rows, 2, "2026-01-01")
+    assert "| permission | no answer (API error): Gemini API returned HTTP 503" in table
+    assert "answered 2/3; of those, valid 1/2" in table
     assert "AI totals" not in run_eval.results_table(
         [run_eval.ScenarioResult(name="x", **base)], 1, "d"
     )

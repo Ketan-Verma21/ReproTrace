@@ -7,6 +7,7 @@ real API is never called from tests (Rules.md 7).
 
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -21,6 +22,9 @@ MODEL_ENV = "REPROTRACE_GEMINI_MODEL"
 # An alias that follows Google's current Flash model, which the free tier covers.
 DEFAULT_MODEL = "gemini-flash-latest"
 TIMEOUT_S = 90.0
+# Overload (503) and rate limits (429) are usually brief: wait and try again before giving up.
+RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+RETRY_WAITS_S = (5.0, 15.0)
 
 Opener = Callable[..., Any]
 
@@ -30,6 +34,7 @@ _HTTP_HINTS = {
     403: "The API key was rejected or lacks access to this model.",
     404: "The model was not found. Try --model gemini-flash-latest.",
     429: "Rate limit or free-tier quota reached. Wait a minute and try again.",
+    503: "Google's servers are overloaded right now. Try again later, or another model (--model).",
 }
 
 
@@ -44,11 +49,15 @@ class GeminiProvider:
         model: str = DEFAULT_MODEL,
         timeout: float = TIMEOUT_S,
         opener: Opener = urllib.request.urlopen,
+        retry_waits: tuple[float, ...] = RETRY_WAITS_S,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.model = model
         self._api_key = api_key
         self._timeout = timeout
         self._opener = opener
+        self._retry_waits = retry_waits
+        self._sleep = sleep
 
     @classmethod
     def from_env(cls, model: str | None = None) -> "GeminiProvider":
@@ -77,7 +86,21 @@ class GeminiProvider:
         }
 
     def generate(self, system: str, prompt: str, schema: dict) -> str:
-        """Call generateContent; return the text of the first candidate."""
+        """Call generateContent, retrying briefly on overload; return the answer text."""
+        attempts = len(self._retry_waits) + 1
+        for attempt in range(1, attempts + 1):
+            try:
+                return self._generate_once(system, prompt, schema)
+            except AIError as error:
+                status = getattr(error.__cause__, "code", None)
+                if status not in RETRY_STATUS or attempt == attempts:
+                    if attempt > 1:
+                        error.message += f" (after {attempt} attempts)"
+                    raise
+                self._sleep(self._retry_waits[attempt - 1])
+        raise AssertionError("unreachable")
+
+    def _generate_once(self, system: str, prompt: str, schema: dict) -> str:
         url = API_URL.format(model=urllib.parse.quote(self.model, safe=""))
         request = urllib.request.Request(
             url,

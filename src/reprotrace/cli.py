@@ -187,10 +187,13 @@ def report(
     out: Annotated[
         Path | None, typer.Option("--out", help="Write the report here instead.")
     ] = None,
+    html: Annotated[
+        bool, typer.Option("--html", help="Write a standalone HTML page instead of Markdown.")
+    ] = False,
 ) -> None:
-    """Write a Markdown report of a saved comparison."""
+    """Write a Markdown (or HTML) report of a saved comparison."""
     try:
-        path = write_report(Path.cwd(), comparison_id, out)
+        path = write_report(Path.cwd(), comparison_id, out, html=html)
     except ReproTraceError as error:
         raise _fail(ctx, error) from error
     _out(ctx, [Text.assemble("Report written to ", styled(str(path), "accent"))])

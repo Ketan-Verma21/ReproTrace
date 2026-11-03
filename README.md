@@ -1,6 +1,7 @@
 # ReproTrace
 
 [![ci](https://github.com/Ketan-Verma21/ReproTrace/actions/workflows/ci.yml/badge.svg)](https://github.com/Ketan-Verma21/ReproTrace/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/reprotrace)](https://pypi.org/project/reprotrace/)
 
 Turn a mysterious CI failure into evidence.
 
@@ -34,13 +35,13 @@ proof of the cause.
 Linux only (strace is Linux-specific). Needs Python 3.11 or newer and `strace`.
 
 ```text
-sudo apt install strace                 # Debian/Ubuntu; Fedora: sudo dnf install strace
-python3 -m pip install "git+https://github.com/Ketan-Verma21/ReproTrace@v0.1.0"
+sudo apt install strace pipx            # Debian/Ubuntu; Fedora: sudo dnf install strace pipx
+pipx install reprotrace
 reprotrace --help
 ```
 
-`pipx install "git+https://github.com/Ketan-Verma21/ReproTrace@v0.1.0"` works too and keeps
-the tool in its own environment.
+pipx keeps the tool in its own environment. `python3 -m pip install reprotrace` inside a
+virtual environment works too.
 
 ## 60-second demo
 
@@ -76,8 +77,9 @@ Top divergences (ranked, heuristic)  |  105 total: 1 critical, 0 warning, 104 in
      good, 2 on bad); 328 events before the failing exit on bad
 ```
 
-`report` writes the full Markdown report to `.reprotrace/reports/`. See
-[`docs/example-report.md`](docs/example-report.md) for one made from real captures, where a
+`report` writes the full Markdown report to `.reprotrace/reports/` (`report --html` for a
+standalone HTML page with the same content). See
+[`docs/example-report.md`](https://github.com/Ketan-Verma21/ReproTrace/blob/main/docs/example-report.md) for one made from real captures, where a
 missing file and a different time zone both differ.
 
 ## Commands
@@ -88,7 +90,7 @@ missing file and a different time zone both differ.
 | `reprotrace show RUN_ID` | One run: failed file opens, programs run, network connections |
 | `reprotrace runs` | Saved runs, grouped by capture |
 | `reprotrace diff A B` | Compare two labels (newest capture of each), group ids or run ids; ranked |
-| `reprotrace report [CMP_ID]` | Markdown report of the latest (or a given) comparison |
+| `reprotrace report [CMP_ID] [--html]` | Markdown report of the latest (or a given) comparison; `--html` writes one self-contained page instead (light and dark mode, works offline) |
 
 Global options go before the command: `reprotrace --no-color diff ...` for plain output (or
 set `NO_COLOR`), `reprotrace --debug ...` for stack traces. Data is stored in `.reprotrace/`
@@ -96,7 +98,7 @@ in the current folder.
 
 ## Comparing CI with your machine
 
-[`docs/CI.md`](docs/CI.md) shows how to capture the command in GitHub Actions, download the
+[`docs/CI.md`](https://github.com/Ketan-Verma21/ReproTrace/blob/main/docs/CI.md) shows how to capture the command in GitHub Actions, download the
 run folders as an artifact, and compare them with a capture from your machine. The workflow
 in `.github/workflows/ci.yml` includes a working example.
 
@@ -176,4 +178,4 @@ strace first.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/Ketan-Verma21/ReproTrace/blob/main/LICENSE).

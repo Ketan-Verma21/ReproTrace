@@ -22,6 +22,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -207,10 +208,16 @@ def explain_project(project: Path, cause: dict[str, list[str]], runs: int, provi
     try:
         explanation = explain_bundle(bundle, provider, project.parent.name)
     except AIError as error:
-        return {"valid": False, "error": error.message}
+        # Validation failures say "rejected"; anything else means no answer came back (HTTP
+        # error, quota, overload), which says nothing about the model's grounding.
+        answered = "rejected" in error.message
+        return {"answered": answered, "valid": False, "error": error.message,
+                "model": provider.model}  # fmt: skip
     first = explanation.hypotheses[0] if explanation.hypotheses else None
     return {
+        "answered": True,
         "valid": True,
+        "model": provider.model,
         "hypotheses": len(explanation.hypotheses),
         "top_cites_cause": bool(first and cause_ids & set(first.divergence_ids)),
         "any_cites_cause": any(cause_ids & set(h.divergence_ids) for h in explanation.hypotheses),
@@ -289,12 +296,14 @@ def ai_table(results: list[ScenarioResult]) -> list[str]:
     checked = [r for r in results if r.ai is not None]
     if not checked:
         return []
-    valid = sum(1 for r in checked if r.ai["valid"])
-    top = sum(1 for r in checked if r.ai.get("top_cites_cause"))
+    answered = [r for r in checked if r.ai.get("answered", True)]
+    valid = sum(1 for r in answered if r.ai["valid"])
+    top = sum(1 for r in answered if r.ai.get("top_cites_cause"))
     lines = [
         "",
-        "AI explanations (`--explain`, optional layer): an answer is valid when it matches the "
-        "schema and every cited divergence and event exists in the comparison.",
+        f"AI explanations (`--explain`, experimental, model `{checked[0].ai.get('model', '?')}`): "
+        "an answer is valid when it matches the schema and every cited divergence and event "
+        "exists in the comparison.",
         "",
         "| Scenario | Valid answer | First hypothesis cites the cause | Any hypothesis cites it | "
         "Confidence |",
@@ -303,14 +312,16 @@ def ai_table(results: list[ScenarioResult]) -> list[str]:
     for r in checked:
         ai = r.ai
         if not ai["valid"]:
-            lines.append(f"| {r.name} | no: {ai['error'][:80].replace('|', '/')} | - | - | - |")
+            what = "rejected" if ai.get("answered", True) else "no answer (API error)"
+            lines.append(f"| {r.name} | {what}: {ai['error'][:70].replace('|', '/')} | - | - | - |")
             continue
         lines.append(
             f"| {r.name} | yes | {'yes' if ai['top_cites_cause'] else 'no'} | "
             f"{'yes' if ai['any_cites_cause'] else 'no'} | {ai['top_confidence'] or '-'} |"
         )
-    lines += ["", f"**AI totals:** valid {valid}/{len(checked)}, first hypothesis cites the "
-              f"planted cause {top}/{len(checked)}."]  # fmt: skip
+    lines += ["", f"**AI totals:** answered {len(answered)}/{len(checked)}; of those, valid "
+              f"{valid}/{len(answered)}, first hypothesis cites the planted cause "
+              f"{top}/{len(answered)}."]  # fmt: skip
     return lines
 
 
@@ -343,6 +354,10 @@ def main(argv: list[str] | None = None) -> int:
         "--explain", action="store_true",
         help="also ask the AI layer about each scenario (needs GEMINI_API_KEY)",
     )  # fmt: skip
+    parser.add_argument(
+        "--explain-pause", type=float, default=15.0,
+        help="seconds to wait between AI calls, to stay under free-tier rate limits (default 15)",
+    )  # fmt: skip
     args = parser.parse_args(argv)
 
     folders = sorted(p for p in SCENARIOS.iterdir() if (p / "expected.json").is_file())
@@ -364,6 +379,8 @@ def main(argv: list[str] | None = None) -> int:
     results: list[ScenarioResult] = []
     for folder in folders:
         print(f"Running {folder.name} ...", flush=True)
+        if provider is not None and results:
+            time.sleep(args.explain_pause)
         try:
             result = run_scenario(folder, args.runs, work, provider)
         except ScenarioSetupError as error:
@@ -374,8 +391,17 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(f"  cause rank {result.cause_rank}, {result.divergences} divergences", flush=True)
         if result.ai is not None:
-            verdict = "valid" if result.ai["valid"] else f"rejected: {result.ai['error']}"
-            print(f"  AI answer {verdict}", flush=True)
+            ai = result.ai
+            if ai["valid"]:
+                cites = "cites the planted cause" if ai["top_cites_cause"] else "does NOT cite it"
+                verdict = (
+                    f"valid; first hypothesis ({ai['top_confidence']}) {cites}: {ai['top_title']}"
+                )
+            elif ai["answered"]:
+                verdict = f"rejected: {ai['error']}"
+            else:
+                verdict = f"no answer: {ai['error'][:160]}"
+            print(f"  AI {verdict}", flush=True)
         results.append(result)
 
     measured_on = datetime.now(UTC).strftime("%Y-%m-%d")

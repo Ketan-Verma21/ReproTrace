@@ -36,9 +36,9 @@ def db_path(base: Path) -> Path:
     return data_dir(base) / DB_FILE
 
 
-def report_path(base: Path, comparison_id: str) -> Path:
-    """Return the default Markdown report path for a comparison."""
-    return data_dir(base) / REPORTS_DIR_NAME / f"{comparison_id}.md"
+def report_path(base: Path, comparison_id: str, suffix: str = ".md") -> Path:
+    """Return the default report path for a comparison (``.md`` or ``.html``)."""
+    return data_dir(base) / REPORTS_DIR_NAME / f"{comparison_id}{suffix}"
 
 
 def explanation_path(base: Path, comparison_id: str) -> Path:
